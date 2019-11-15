@@ -1,0 +1,23 @@
+[package]
+name = "rewasm"
+version = "0.1.0"
+authors = ["Benedikt Werner <1benediktwerner@gmail.com>"]
+edition = "2018"
+default-run = "rewasm"
+
+[dependencies]
+parity-wasm = "0.40"
+wasmi-validation = "0.2"
+clap = "2.33.0"
+failure = "0.1"
+slab = "0.4"
+color-backtrace = "0.2"
+z3-sys = "0.5.0"
+z3 = "0.4.0"
+
+[dev-dependencies]
+rand = "0.7"
+
+[replace]
+"z3-sys:0.5.0" = { git = "https://github.com/benediktwerner/z3.rs" }
+"z3:0.4.0" = { git = "https://github.com/benediktwerner/z3.rs" }
