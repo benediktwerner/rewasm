@@ -63,7 +63,7 @@ fn remove_subscripts_in_expr(expr: &mut Expr) {
                 remove_subscripts_in_expr(arg);
             }
         }
-        CallIndirect(expr, _, args, _) => {
+        CallIndirect(expr, args, _) => {
             remove_subscripts_in_expr(expr);
             for arg in args {
                 remove_subscripts_in_expr(arg);

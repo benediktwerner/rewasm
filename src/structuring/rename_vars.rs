@@ -1,25 +1,24 @@
 use std::collections::HashMap;
-use std::rc::Rc;
 
 use crate::ssa::{cond::MappedExpr, Cond, Expr, Stmt, Var};
-use crate::wasm::{Module, ValueType};
+use bwasm::{Module, ValueType};
 
-pub fn apply(code: &mut Vec<Stmt>, module: Rc<Module>, func_index: u32) -> Vec<(Var, ValueType)> {
+pub fn apply(code: &mut Vec<Stmt>, module: &Module, func_index: u32) -> Vec<(Var, ValueType)> {
     let mut renamer = Renamer::new(module, func_index);
     renamer.rename(code);
     renamer.decls
 }
 
-struct Renamer {
+struct Renamer<'a> {
     decls: Vec<(Var, ValueType)>,
     var_types: HashMap<Var, ValueType>,
     name_map: HashMap<Var, Var>,
-    module: Rc<Module>,
+    module: &'a Module,
     next_index: u32,
 }
 
-impl Renamer {
-    pub fn new(module: Rc<Module>, func_index: u32) -> Self {
+impl<'a> Renamer<'a> {
+    pub fn new(module: &'a Module, func_index: u32) -> Self {
         let func_type = module.func(func_index).func_type();
         let mut var_types = HashMap::new();
         for (i, arg) in func_type.params().iter().enumerate() {
@@ -54,7 +53,7 @@ impl Renamer {
                 Expr(expr) | Return(expr) | Branch(expr) => self.rename_expr(expr),
                 SetLocal(ref mut var, expr) => {
                     self.rename_expr(expr);
-                    let var_type = expr.result_type(Rc::clone(&self.module), &self.var_types);
+                    let var_type = expr.result_type(self.module, &self.var_types);
                     self.rename_var(var, var_type);
                 }
                 SetGlobal(_, expr) => self.rename_expr(expr),
@@ -130,7 +129,7 @@ impl Renamer {
                     self.rename_expr(arg);
                 }
             }
-            CallIndirect(expr, _, args, _) => {
+            CallIndirect(expr, args, _) => {
                 self.rename_expr(expr);
                 for arg in args {
                     self.rename_expr(arg);

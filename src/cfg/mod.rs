@@ -5,7 +5,7 @@ use slab::Slab;
 
 use crate::fmt::CodeDisplay;
 use crate::ssa::Stmt;
-use crate::wasm::Module;
+use crate::wasm;
 
 mod builder;
 pub use builder::CfgBuildError;
@@ -86,7 +86,7 @@ impl BasicBlock {
 
 pub struct Cfg {
     pub func_index: u32,
-    pub module: Rc<Module>,
+    pub wasm: Rc<wasm::Instance>,
     pub nodes: Slab<BasicBlock>,
 }
 
@@ -97,7 +97,7 @@ impl Cfg {
             .iter()
             .map(|(i, bb)| {
                 let instrs = (&bb.code[..])
-                    .create_str(Rc::clone(&self.module), self.func_index)
+                    .create_str(Rc::clone(&self.wasm), self.func_index)
                     .replace("\n", "\\n");
                 if bb.code.is_empty() {
                     format!("\t{}", i)
@@ -133,8 +133,8 @@ impl Cfg {
         format!("digraph G {{\n{}\n\n\tstart -> 0:n\n{}\n}}", nodes, edges)
     }
 
-    pub fn build(module: Rc<Module>, func_index: u32) -> Result<Cfg, CfgBuildError> {
-        builder::build(module, func_index)
+    pub fn build(wasm: Rc<wasm::Instance>, func_index: u32) -> Result<Cfg, CfgBuildError> {
+        builder::build(wasm, func_index)
     }
 
     pub fn region_successors(&self, region_nodes: &HashSet<NodeId>) -> HashSet<NodeId> {

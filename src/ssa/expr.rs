@@ -1,8 +1,8 @@
 use std::collections::HashMap;
-use std::rc::Rc;
 
 use crate::fmt;
-use crate::wasm::ValueType;
+use crate::wasm::TableElement;
+use bwasm::ValueType;
 
 use super::Var;
 
@@ -16,7 +16,7 @@ pub enum Expr {
     // func_index, args
     Call(u32, Vec<Expr>),
     // index, targets, args, type_ref
-    CallIndirect(Box<Expr>, HashMap<u32, u32>, Vec<Expr>, u32),
+    CallIndirect(Box<Expr>, Vec<Expr>, u32),
 
     MemorySize,
     MemoryGrow(Box<Expr>),
@@ -474,7 +474,7 @@ impl Expr {
         }
     }
 
-    pub fn result_type(&self, module: Rc<crate::wasm::Module>, var_types: &HashMap<Var, ValueType>) -> ValueType {
+    pub fn result_type(&self, module: &bwasm::Module, var_types: &HashMap<Var, ValueType>) -> ValueType {
         use Expr::*;
         use ValueType::*;
         match self {
@@ -482,7 +482,7 @@ impl Expr {
             Select(_, expr, _) => expr.result_type(module, var_types),
 
             Call(idx, ..) => module.func(*idx).return_type().unwrap(),
-            CallIndirect(_, _, _, type_ref) => module.types()[*type_ref as usize].return_type().unwrap(),
+            CallIndirect(_, _, type_ref) => module.types()[*type_ref as usize].return_type().unwrap(),
             MemorySize => I32,
             MemoryGrow(..) => I32,
 
@@ -658,8 +658,20 @@ impl fmt::CodeDisplay for Expr {
                 write_paren(f, self, b);
             }
             Expr::Call(index, args) => write_call(f, *index, args),
-            Expr::CallIndirect(index, targets, args, _) => {
-                if targets.is_empty() {
+            Expr::CallIndirect(index, args, sig) => {
+                let mut targets = HashMap::new();
+                let wasm = f.wasm();
+                let module = wasm.module();
+                if !wasm.tables().is_empty() {
+                    for (i, ele) in wasm.tables()[0].elements.iter().enumerate() {
+                        if let TableElement::Func(index) = ele {
+                            if module.func(*index).type_ref() == *sig {
+                                targets.insert(i as u32, *index);
+                            }
+                        }
+                    }
+                }
+                if targets.is_empty() || targets.len() > 10 {
                     f.write("indirect_call(");
                     f.write(index);
                     f.write(")(");
@@ -676,7 +688,7 @@ impl fmt::CodeDisplay for Expr {
                     f.write(index);
                     f.write(" {");
                     f.indent();
-                    for (&i, &target) in targets {
+                    for (i, target) in targets {
                         f.newline();
                         write!(f, "{} => ", i);
                         write_call(f, target, args);

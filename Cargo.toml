@@ -6,17 +6,15 @@ edition = "2018"
 default-run = "rewasm"
 
 [dependencies]
-parity-wasm = "0.40"
-wasmi-validation = "0.2"
+parity-wasm = "0.41"
+wasmi-validation = "0.3"
 clap = "2.33.0"
 failure = "0.1"
 slab = "0.4"
-color-backtrace = "0.2"
+color-backtrace = "0.3"
 z3-sys = "0.5.0"
 z3 = "0.4.0"
-
-[dev-dependencies]
-rand = "0.7"
+bwasm = { git = "https://github.com/benediktwerner/bwasm" }
 
 [replace]
 "z3-sys:0.5.0" = { git = "https://github.com/benediktwerner/z3.rs" }

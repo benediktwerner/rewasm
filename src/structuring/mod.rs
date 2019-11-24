@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use crate::cfg::{Cfg, Edge, EdgeCond, EdgeType};
 use crate::dominance::DomTree;
 use crate::ssa::{Cond, Expr, LoopKind, Stmt, Var};
-use crate::wasm::ValueType;
+use bwasm::ValueType;
 
 mod condition_refinement;
 mod loop_refinement;
@@ -339,7 +339,7 @@ impl<'a> Structurer<'a> {
 
 pub fn structure(mut cfg: Cfg) -> (Vec<(Var, ValueType)>, Vec<Stmt>) {
     let func_index = cfg.func_index;
-    let module = std::rc::Rc::clone(&cfg.module);
+    let wasm = std::rc::Rc::clone(&cfg.wasm);
     let post_order = InitDFS::dfs(&cfg);
     let dom_tree = DomTree::build(&cfg);
     let mut expr_map = build_expr_map(&mut cfg);
@@ -356,7 +356,7 @@ pub fn structure(mut cfg: Cfg) -> (Vec<(Var, ValueType)>, Vec<Stmt>) {
     sidefx_remover::apply(&mut code, &mut expr_map);
     insert_cond_exprs(&mut code, &expr_map);
 
-    let decls = rename_vars::apply(&mut code, module, func_index);
+    let decls = rename_vars::apply(&mut code, wasm.module(), func_index);
     (decls, code)
 }
 

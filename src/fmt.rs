@@ -1,12 +1,13 @@
 use std::rc::Rc;
 
 use crate::ssa::{Stmt, Var};
-use crate::wasm::{Function, Module, ValueType};
+use crate::wasm;
+use bwasm::{Function, Module, ValueType};
 
 pub trait CodeDisplay {
     fn fmt_code(&self, f: &mut CodeWriter);
-    fn create_str(&self, module: Rc<Module>, func_index: u32) -> String {
-        let mut fmt = CodeWriter::formatter(module, func_index);
+    fn create_str(&self, wasm: Rc<wasm::Instance>, func_index: u32) -> String {
+        let mut fmt = CodeWriter::formatter(wasm, func_index);
         self.fmt_code(&mut fmt);
         fmt.get_output()
     }
@@ -62,39 +63,43 @@ impl Output {
 
 pub struct CodeWriter {
     indent: usize,
-    module: Rc<Module>,
+    wasm: Rc<wasm::Instance>,
     func_index: u32,
     output: Output,
     suppress_newline: bool,
 }
 
 impl CodeWriter {
-    pub fn formatter(module: Rc<Module>, func_index: u32) -> CodeWriter {
+    pub fn formatter(wasm: Rc<wasm::Instance>, func_index: u32) -> CodeWriter {
         CodeWriter {
             indent: 0,
-            module,
+            wasm,
             func_index,
             output: Output::str(),
             suppress_newline: false,
         }
     }
 
-    pub fn printer(module: Rc<Module>, func_index: u32) -> CodeWriter {
+    pub fn printer(wasm: Rc<wasm::Instance>, func_index: u32) -> CodeWriter {
         CodeWriter {
             indent: 0,
-            module,
+            wasm,
             func_index,
             output: Output::stdout(),
             suppress_newline: false,
         }
     }
 
+    pub fn wasm(&self) -> &wasm::Instance {
+        &self.wasm
+    }
+
     pub fn module(&self) -> &Module {
-        self.module.as_ref()
+        self.wasm.module()
     }
 
     pub fn func(&self) -> &Function {
-        self.module.func(self.func_index)
+        self.wasm.module().func(self.func_index)
     }
 
     pub fn indent(&mut self) {

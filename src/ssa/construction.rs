@@ -38,7 +38,7 @@ struct SSATransformer {
 impl SSATransformer {
     fn place_phi_nodes(&mut self, cfg: &mut Cfg, defs: &HashMap<u32, Vec<usize>>) {
         let mut phi: HashMap<u32, HashSet<usize>> = HashMap::new();
-        let arg_count = cfg.module.func(cfg.func_index).param_count();
+        let arg_count = cfg.wasm.module().func(cfg.func_index).param_count();
 
         for (var, defsites) in defs {
             if *var >= arg_count && defsites.len() == 1 {
@@ -79,7 +79,7 @@ impl SSATransformer {
                     self.rename_in_expr(arg, pos);
                 }
             }
-            CallIndirect(expr, _, args, _) => {
+            CallIndirect(expr, args, _) => {
                 self.rename_in_expr(expr, pos);
                 for arg in args {
                     self.rename_in_expr(arg, pos);

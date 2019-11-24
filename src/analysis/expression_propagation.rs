@@ -393,7 +393,7 @@ fn count_var_occ_expr(expr: &Expr, var: Var) -> u32 {
         }
 
         Call(_, args) => args.iter().map(|arg| count_var_occ_expr(arg, var)).sum(),
-        CallIndirect(index, _, args, _) => {
+        CallIndirect(index, args, _) => {
             count_var_occ_expr(index, var) + args.iter().map(|arg| count_var_occ_expr(arg, var)).sum::<u32>()
         }
 
@@ -587,7 +587,7 @@ fn replace_all_expr(use_expr: &mut Expr, var: Var, def_expr: &Expr) {
                 replace_all_expr(arg, var, def_expr);
             }
         }
-        CallIndirect(index, _, args, _) => {
+        CallIndirect(index, args, _) => {
             replace_all_expr(index, var, def_expr);
             for arg in args {
                 replace_all_expr(arg, var, def_expr);

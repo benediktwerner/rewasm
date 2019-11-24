@@ -7,7 +7,7 @@ use rewasm::cfg::{Cfg, CfgBuildError};
 use rewasm::fmt;
 use rewasm::ssa;
 use rewasm::structuring;
-use rewasm::wasm::Module;
+use rewasm::wasm;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -25,18 +25,17 @@ fn main() {
         .get_matches();
 
     let file_path = args.value_of("file").unwrap();
-    let module = match Module::from_file(file_path) {
-        Ok(module) => module,
+    let wasm = match wasm::Instance::from_file(file_path) {
+        Ok(instance) => Rc::new(instance),
         Err(error) => {
             eprintln!("{}", error);
             return;
         }
     };
-    let module = Rc::new(module);
 
     if let Some(func_index) = args.value_of("function") {
         let func_index = func_index.parse().unwrap();
-        match decompile_func(module, func_index) {
+        match decompile_func(wasm, func_index) {
             Ok(()) => (),
             Err(CfgBuildError::NoSuchFunc) => eprintln!("No function with index {}", func_index),
             Err(CfgBuildError::FuncIsImported) => {
@@ -44,18 +43,18 @@ fn main() {
             }
         }
     } else {
-        for (i, func) in module.functions().iter().enumerate() {
+        for (i, func) in wasm.module().functions().iter().enumerate() {
             if !func.is_imported() {
                 eprintln!("Decompiling f{}", i);
-                decompile_func(Rc::clone(&module), i as u32).unwrap();
+                decompile_func(Rc::clone(&wasm), i as u32).unwrap();
                 println!();
             }
         }
     }
 }
 
-fn decompile_func(module: Rc<Module>, func_index: u32) -> Result<(), CfgBuildError> {
-    let mut cfg = Cfg::build(Rc::clone(&module), func_index)?;
+fn decompile_func(wasm: Rc<wasm::Instance>, func_index: u32) -> Result<(), CfgBuildError> {
+    let mut cfg = Cfg::build(Rc::clone(&wasm), func_index)?;
     let mut def_use_map = ssa::transform_to_ssa(&mut cfg);
 
     analysis::propagate_expressions(&mut cfg, &mut def_use_map);
@@ -66,6 +65,6 @@ fn decompile_func(module: Rc<Module>, func_index: u32) -> Result<(), CfgBuildErr
     // println!("{}", cfg.dot_string());
 
     let (decls, code) = structuring::structure(cfg);
-    fmt::CodeWriter::printer(module, func_index).write_func(&decls, &code);
+    fmt::CodeWriter::printer(wasm, func_index).write_func(&decls, &code);
     Ok(())
 }

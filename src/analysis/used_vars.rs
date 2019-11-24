@@ -23,7 +23,7 @@ fn used_vars(expr: &Expr, result: &mut HashSet<Var>) {
                 used_vars(arg, result);
             }
         }
-        CallIndirect(index, _, args, _) => {
+        CallIndirect(index, args, _) => {
             used_vars(index, result);
             for arg in args {
                 used_vars(arg, result);

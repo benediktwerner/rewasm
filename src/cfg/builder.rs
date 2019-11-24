@@ -1,12 +1,13 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::rc::Rc;
 
+use bwasm::{self, BlockType, Function, Instruction, ValueType};
 use slab::Slab;
 
 use super::{BasicBlock, Cfg, Edge, EdgeCond, EdgeType, NodeId};
 
 use crate::ssa::{Expr, Stmt, Var};
-use crate::wasm::{self, BlockType, Instruction, Module, TableElement, ValueType};
+use crate::wasm;
 
 #[derive(Debug)]
 pub enum CfgBuildError {
@@ -198,7 +199,7 @@ impl CfgBuilder {
         self.nodes[reloc.node].next[reloc.edge].node = target;
     }
 
-    fn init_locals(&mut self, func: &wasm::Function) {
+    fn init_locals(&mut self, func: &Function) {
         for (i, local) in func.locals().iter().enumerate() {
             let i = i + func.func_type().params().len();
             let val = match local {
@@ -220,8 +221,8 @@ impl CfgBuilder {
 
     /// Build the cfg for the function `func_index` in `module`
     #[allow(clippy::cognitive_complexity)]
-    fn build(mut self, module: Rc<Module>, func_index: u32) -> Result<Cfg, CfgBuildError> {
-        let func = if let Some(func) = module.get_func(func_index) {
+    fn build(mut self, wasm: Rc<wasm::Instance>, func_index: u32) -> Result<Cfg, CfgBuildError> {
+        let func = if let Some(func) = wasm.module().get_func(func_index) {
             if func.is_imported() {
                 return Err(CfgBuildError::FuncIsImported);
             }
@@ -437,7 +438,7 @@ impl CfgBuilder {
                 }
 
                 Call(index) => {
-                    let func_type = module.func(*index).func_type();
+                    let func_type = wasm.module().func(*index).func_type();
                     let params_count = func_type.params().len();
                     let mut args = Vec::with_capacity(params_count);
 
@@ -454,7 +455,7 @@ impl CfgBuilder {
                 }
                 CallIndirect(signature, _) => {
                     let index_expr = Box::new(self.pop());
-                    let func_type = &module.types()[*signature as usize];
+                    let func_type = &wasm.module().types()[*signature as usize];
                     let params_count = func_type.params().len();
                     let mut args = Vec::with_capacity(params_count);
 
@@ -463,18 +464,7 @@ impl CfgBuilder {
                     }
                     args.reverse();
 
-                    let mut targets = HashMap::new();
-                    if !module.tables().is_empty() {
-                        for (i, ele) in module.tables()[0].elements().iter().enumerate() {
-                            if let TableElement::Func(index) = ele {
-                                if module.func(*index).type_ref() == *signature {
-                                    targets.insert(i as u32, *index);
-                                }
-                            }
-                        }
-                    }
-
-                    let call_expr = Expr::CallIndirect(index_expr, targets, args, *signature);
+                    let call_expr = Expr::CallIndirect(index_expr, args, *signature);
                     if func_type.return_type().is_none() {
                         self.push_code(Stmt::Expr(call_expr));
                     } else {
@@ -683,7 +673,7 @@ impl CfgBuilder {
         self.compute_prev();
         self.remove_empty();
         Ok(Cfg {
-            module,
+            wasm,
             func_index,
             nodes: self.nodes,
         })
@@ -758,6 +748,6 @@ impl CfgBuilder {
     }
 }
 
-pub fn build(module: Rc<Module>, func_index: u32) -> Result<Cfg, CfgBuildError> {
-    CfgBuilder::new().build(module, func_index)
+pub fn build(wasm: Rc<wasm::Instance>, func_index: u32) -> Result<Cfg, CfgBuildError> {
+    CfgBuilder::new().build(wasm, func_index)
 }
