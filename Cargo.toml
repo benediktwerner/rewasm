@@ -3,7 +3,6 @@ name = "rewasm"
 version = "0.1.0"
 authors = ["Benedikt Werner <1benediktwerner@gmail.com>"]
 edition = "2018"
-default-run = "rewasm"
 
 [dependencies]
 bwasm = "0.1"
