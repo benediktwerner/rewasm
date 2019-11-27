@@ -12,8 +12,6 @@ use rewasm::wasm;
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn main() {
-    color_backtrace::install();
-
     let args = App::new("rewasm")
         .version(VERSION)
         .arg(
