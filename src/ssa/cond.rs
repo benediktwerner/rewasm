@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::Not;
 
 use z3::ast::Ast;
 
@@ -153,23 +154,6 @@ impl Cond {
         Self::Expr(MappedExpr::Mapped(index))
     }
 
-    pub fn not(self) -> Self {
-        match self {
-            Self::True => Self::False,
-            Self::False => Self::True,
-            Self::Not(expr) => *expr,
-            Self::And(a, b) => Self::Or(Box::new(a.not()), Box::new(b.not())),
-            Self::Or(a, b) => Self::And(Box::new(a.not()), Box::new(b.not())),
-            Self::Cmp(a, cmp, b) => Self::Cmp(a, cmp.invert(), b),
-            Self::Expr(MappedExpr::Const(0)) => Self::True,
-            Self::Expr(MappedExpr::Const(_)) => Self::False,
-            Self::Expr(MappedExpr::Expr(expr)) if expr.can_invert() => {
-                Self::Expr(MappedExpr::Expr(Box::new(expr.invert())))
-            }
-            _ => Self::Not(Box::new(self)),
-        }
-    }
-
     pub fn and(self, b: Self) -> Self {
         match (self.is_const_true(), b.is_const_true()) {
             (true, true) => Self::True,
@@ -300,6 +284,27 @@ impl Cond {
             }
             Self::Expr(expr) => expr.to_z3_bool_expr(ctx)?,
         })
+    }
+}
+
+impl Not for Cond {
+    type Output = Self;
+
+    fn not(self) -> Self {
+        match self {
+            Self::True => Self::False,
+            Self::False => Self::True,
+            Self::Not(expr) => *expr,
+            Self::And(a, b) => Self::Or(Box::new(a.not()), Box::new(b.not())),
+            Self::Or(a, b) => Self::And(Box::new(a.not()), Box::new(b.not())),
+            Self::Cmp(a, cmp, b) => Self::Cmp(a, cmp.invert(), b),
+            Self::Expr(MappedExpr::Const(0)) => Self::True,
+            Self::Expr(MappedExpr::Const(_)) => Self::False,
+            Self::Expr(MappedExpr::Expr(expr)) if expr.can_invert() => {
+                Self::Expr(MappedExpr::Expr(Box::new(expr.invert())))
+            }
+            _ => Self::Not(Box::new(self)),
+        }
     }
 }
 

@@ -55,15 +55,15 @@ impl Stmt {
         Stmt::Phi(Var::no_sub(index), Vec::new())
     }
 
-    pub fn len(&self) -> usize {
+    pub fn length(&self) -> usize {
         use Stmt::*;
         match self {
-            Expr(expr) => expr.len(),
-            Return(expr) => 5 + expr.len(),
+            Expr(expr) => expr.length(),
+            Return(expr) => 5 + expr.length(),
             ReturnVoid => 5,
-            Branch(expr) => 5 + expr.len(),
+            Branch(expr) => 5 + expr.length(),
             Phi(..) => 0,
-            SetLocal(_, expr) | SetGlobal(_, expr) => 5 + expr.len(),
+            SetLocal(_, expr) | SetGlobal(_, expr) => 5 + expr.length(),
             I32Store(location, value)
             | I64Store(location, value)
             | F32Store(location, value)
@@ -72,7 +72,7 @@ impl Stmt {
             | I32Store16(location, value)
             | I64Store8(location, value)
             | I64Store16(location, value)
-            | I64Store32(location, value) => location.len() + 6 + value.len(),
+            | I64Store32(location, value) => location.length() + 6 + value.length(),
             Unreachable => 10,
             While(..) => unreachable!(),
             Break => unreachable!(),

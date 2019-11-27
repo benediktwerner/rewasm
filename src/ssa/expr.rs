@@ -178,20 +178,20 @@ pub enum Expr {
 }
 
 impl Expr {
-    pub fn len(&self) -> usize {
+    pub fn length(&self) -> usize {
         use Expr::*;
         match self {
             True => 4,
-            Select(cond, true_expr, false_expr) => cond.len() + 3 + true_expr.len() + 3 + false_expr.len(),
+            Select(cond, true_expr, false_expr) => cond.length() + 3 + true_expr.length() + 3 + false_expr.length(),
 
-            Call(_, args) => 8 + args.iter().map(|arg| arg.len()).sum::<usize>(),
+            Call(_, args) => 8 + args.iter().map(|arg| arg.length()).sum::<usize>(),
             CallIndirect(..) => 100,
 
             MemorySize => 10,
-            MemoryGrow(expr) => 10 + expr.len(),
+            MemoryGrow(expr) => 10 + expr.length(),
             I32Load(expr) | I64Load(expr) | F32Load(expr) | F64Load(expr) | I32Load8S(expr) | I32Load8U(expr)
             | I32Load16S(expr) | I32Load16U(expr) | I64Load8S(expr) | I64Load8U(expr) | I64Load16S(expr)
-            | I64Load16U(expr) | I64Load32S(expr) | I64Load32U(expr) => 6 + expr.len(),
+            | I64Load16U(expr) | I64Load32S(expr) | I64Load32U(expr) => 6 + expr.length(),
 
             GetLocal(_) | GetGlobal(_) => 5,
 
@@ -200,7 +200,9 @@ impl Expr {
             I32Eqz(expr) | I64Eqz(expr) | I32Clz(expr) | I32Ctz(expr) | I32Popcnt(expr) | I64Clz(expr)
             | I64Ctz(expr) | I64Popcnt(expr) | F32Abs(expr) | F32Neg(expr) | F32Ceil(expr) | F32Floor(expr)
             | F32Trunc(expr) | F32Nearest(expr) | F32Sqrt(expr) | F64Abs(expr) | F64Neg(expr) | F64Ceil(expr)
-            | F64Floor(expr) | F64Trunc(expr) | F64Nearest(expr) | F64Sqrt(expr) | I32WrapI64(expr) => 8 + expr.len(),
+            | F64Floor(expr) | F64Trunc(expr) | F64Nearest(expr) | F64Sqrt(expr) | I32WrapI64(expr) => {
+                8 + expr.length()
+            }
 
             I32TruncSF32(expr)
             | I32TruncUF32(expr)
@@ -225,7 +227,7 @@ impl Expr {
             | I32ReinterpretF32(expr)
             | I64ReinterpretF64(expr)
             | F32ReinterpretI32(expr)
-            | F64ReinterpretI64(expr) => 12 + expr.len(),
+            | F64ReinterpretI64(expr) => 12 + expr.length(),
 
             I32Eq(left, right)
             | I32Ne(left, right)
@@ -300,9 +302,9 @@ impl Expr {
             | F64Mul(left, right)
             | F64Div(left, right)
             | F64Min(left, right)
-            | F64Max(left, right) => left.len() + 3 + right.len(),
+            | F64Max(left, right) => left.length() + 3 + right.length(),
 
-            F32Copysign(left, right) | F64Copysign(left, right) => left.len() + 8 + right.len(),
+            F32Copysign(left, right) | F64Copysign(left, right) => left.length() + 8 + right.length(),
         }
     }
 

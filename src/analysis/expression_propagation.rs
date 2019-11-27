@@ -123,7 +123,7 @@ fn can_propagate(
         _ => (),
     }
     if properties.contains_call && count_var_occ(use_stmt, var) > 1
-        || use_stmt.len() + def_expr.len() > 80
+        || use_stmt.length() + def_expr.length() > 80
         || !properties.can_propagate_over_stmt(use_stmt)
     {
         return false;

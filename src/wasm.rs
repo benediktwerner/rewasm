@@ -25,7 +25,7 @@ impl Instance {
             module,
         })
     }
-    pub fn module(&self) -> &Module {
+    pub const fn module(&self) -> &Module {
         &self.module
     }
     pub fn tables(&self) -> &[Table] {

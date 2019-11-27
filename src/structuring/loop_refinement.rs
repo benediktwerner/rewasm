@@ -8,7 +8,7 @@ pub fn apply(code: &mut Vec<Stmt>) {
                 while let Some(If(_, if_body)) = body.first() {
                     if let Some(Break) = if_body.first() {
                         if let If(if_cond, _) = body.remove(0) {
-                            cond.and_inplace(if_cond.not());
+                            cond.and_inplace(!if_cond);
                         }
                     } else {
                         break;
@@ -18,7 +18,7 @@ pub fn apply(code: &mut Vec<Stmt>) {
                     while let Some(If(_, if_body)) = body.last() {
                         if let Some(Break) = if_body.first() {
                             if let Some(If(if_cond, _)) = body.pop() {
-                                cond.and_inplace(if_cond.not());
+                                cond.and_inplace(!if_cond);
                                 *kind = LoopKind::DoWhile;
                             }
                         } else {
