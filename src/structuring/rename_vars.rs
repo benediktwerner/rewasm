@@ -21,13 +21,16 @@ impl<'a> Renamer<'a> {
     pub fn new(module: &'a Module, func_index: u32) -> Self {
         let func_type = module.func(func_index).func_type();
         let mut var_types = HashMap::new();
+        let mut name_map = HashMap::new();
         for (i, arg) in func_type.params().iter().enumerate() {
-            var_types.insert(Var::no_sub(i as u32), *arg);
+            let var = Var::no_sub(i as u32);
+            var_types.insert(var, *arg);
+            name_map.insert(var, var);
         }
         Renamer {
             decls: Vec::new(),
             var_types,
-            name_map: HashMap::new(),
+            name_map,
             next_index: func_type.params().len() as u32,
             module,
         }
