@@ -63,6 +63,6 @@ fn decompile_func(wasm: Rc<wasm::Instance>, func_index: u32) -> Result<(), CfgBu
     // println!("{}", cfg.dot_string());
 
     let (decls, code) = structuring::structure(cfg);
-    fmt::CodeWriter::printer(wasm, func_index).write_func(&decls, &code);
+    fmt::CodeWriter::printer(wasm, func_index).write_func(func_index, &decls, &code);
     Ok(())
 }

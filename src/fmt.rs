@@ -118,7 +118,9 @@ impl CodeWriter {
         self.output.write_fmt(args);
     }
 
-    pub fn write_func(&mut self, decls: &[(Var, ValueType)], code: &[Stmt]) {
+    pub fn write_func(&mut self, func_index: u32, decls: &[(Var, ValueType)], code: &[Stmt]) {
+        writeln!(self, "// Function {}", func_index);
+
         let func = self.func();
         let params = func
             .params()
