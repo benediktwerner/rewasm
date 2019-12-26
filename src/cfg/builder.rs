@@ -162,6 +162,7 @@ impl CfgBuilder {
 
     /// Perform and push a store expression onto the value stack
     fn push_store<F: Fn(Expr, Expr) -> Stmt>(&mut self, offset: u32, constructor: F) {
+        let value = self.pop();
         let mut target = self.pop();
         if offset != 0 {
             if let Expr::I32Const(0) = target {
@@ -170,7 +171,6 @@ impl CfgBuilder {
                 target = Expr::I32Add(Box::new(target), Box::new(Expr::I32Const(offset)));
             }
         }
-        let value = self.pop();
         self.push_code(constructor(target, value));
     }
 
