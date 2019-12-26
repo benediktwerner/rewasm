@@ -96,6 +96,10 @@ pub fn propagate_expressions(cfg: &mut Cfg, DefUseMap(def_map, use_map): &mut De
                     for v in used_vars::find(&def_expr) {
                         use_map.get_mut(&v).unwrap().extend(processed.iter().copied());
                     }
+
+                    if properties.contains_call && use_map[var].is_empty() {
+                        *cfg.stmt_mut(*def_pos) = Stmt::SetLocal(*var, Expr::True); // TODO: Replace with Expr::Unreachable
+                    }
                 }
                 Stmt::Phi(..) => (),
                 other => unreachable!("Invalid defining stmt: {:?}", other),
