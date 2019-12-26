@@ -11,6 +11,7 @@ struct ExprProperties {
     contains_mem_ref: bool,
     contains_global: bool,
     contains_call: bool,
+    complexity: u32,
 }
 
 impl ExprProperties {
@@ -19,6 +20,7 @@ impl ExprProperties {
             contains_mem_ref: contains_memory_ref(expr),
             contains_global: contains_global(expr),
             contains_call: contains_call(expr),
+            complexity: expr.complexity(),
         }
     }
 
@@ -127,7 +129,7 @@ fn can_propagate(
         _ => (),
     }
     if properties.contains_call && count_var_occ(use_stmt, var) > 1
-        || use_stmt.length() + def_expr.length() > 80
+        || properties.complexity > 2 || properties.complexity + use_stmt.complexity() > 4
         || !properties.can_propagate_over_stmt(use_stmt)
     {
         return false;
