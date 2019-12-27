@@ -11,11 +11,14 @@ binaries still produce pretty unreadable output.
 Running `rewasm` requires [libz3](https://github.com/Z3Prover/z3) (version
 `4.8.6` or `4.8.7` should work).
 
-## Building and Installation
+## Installation
+
+You can find prebuilt binaries for 64-bit Linux [here](https://github.com/benediktwerner/rewasm/releases).
+
+### Building from source
 
 Building or installing `rewasm` from source requires a working [Rust Installation](https://www.rust-lang.org/)
 (probably at least version `1.37.0`).
-
 
 To build and install `rewasm` (this will place the
 binary in `~/.cargo/bin` which should be in your `$PATH`):
