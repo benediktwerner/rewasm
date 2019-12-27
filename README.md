@@ -6,11 +6,19 @@ however it's still under development so some features,
 like proper type recovery, are still missing and some
 binaries still produce pretty unreadable output.
 
+## Requirements
+
+Running `rewasm` requires [libz3](https://github.com/Z3Prover/z3) (version
+`4.8.6` or `4.8.7` should work).
+
 ## Building and Installation
 
-Building or installing `rewasm` requires a working [Rust Installation](https://www.rust-lang.org/).
+Building or installing `rewasm` from source requires a working [Rust Installation](https://www.rust-lang.org/)
+(probably at least version `1.37.0`).
 
-To install `rewasm`:
+
+To build and install `rewasm` (this will place the
+binary in `~/.cargo/bin` which should be in your `$PATH`):
 
 ```
 $ git clone https://github.com/benediktwerner/rewasm
@@ -18,7 +26,7 @@ $ cargo install --path rewasm
 $ rewasm --version
 ```
 
-To build `rewasm` from source:
+To just build `rewasm` from source:
 ```
 $ git clone https://github.com/benediktwerner/rewasm
 $ cd rewasm
@@ -26,7 +34,21 @@ $ cargo build --release
 $ ./target/release/rewasm --version
 ```
 
-## Example Usage
+## Usage
+
+Decompile whole file:
+
+```
+$ rewasm example.wasm > example.dec
+```
+
+Decompile a single function (with index `42`):
+
+```
+$ rewasm example.wasm 42
+```
+
+## Example
 
 Convert [`examples/loop.wat`](examples/loop.wat) to a `.wasm` file using [WABT's `wat2wasm`](https://github.com/WebAssembly/wabt) and decompile it:
 ```
