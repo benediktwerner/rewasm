@@ -300,8 +300,12 @@ impl Not for Cond {
             Self::Cmp(a, cmp, b) => Self::Cmp(a, cmp.invert(), b),
             Self::Expr(MappedExpr::Const(0)) => Self::True,
             Self::Expr(MappedExpr::Const(_)) => Self::False,
-            Self::Expr(MappedExpr::Expr(expr)) if expr.can_invert() => {
-                Self::Expr(MappedExpr::Expr(Box::new(expr.invert())))
+            Self::Expr(MappedExpr::Expr(expr)) => {
+                if expr.can_invert() {
+                    Self::Expr(MappedExpr::Expr(Box::new(expr.invert())))
+                } else {
+                    Self::Not(Box::new(Self::Expr(MappedExpr::Expr(expr))))
+                }
             }
             _ => Self::Not(Box::new(self)),
         }
