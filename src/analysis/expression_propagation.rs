@@ -137,12 +137,10 @@ fn can_propagate(
 
     let used_vars = used_vars::find(def_expr).iter().map(|v| v.index).collect();
     if def_pos.node == use_pos.node {
-        let code = &cfg.nodes[def_pos.node].code[def_pos.instr + 1..use_pos.instr];
-        if !can_propagate_over(code, &used_vars, properties) {
-            return false;
-        }
+        let code = &cfg.nodes[def_pos.node].code[def_pos.instr..use_pos.instr];
+        return can_propagate_over(code, &used_vars, properties);
     } else {
-        let code = &cfg.nodes[def_pos.node].code[def_pos.instr + 1..];
+        let code = &cfg.nodes[def_pos.node].code[def_pos.instr..];
         if !can_propagate_over(code, &used_vars, properties) {
             return false;
         }
