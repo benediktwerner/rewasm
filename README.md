@@ -61,19 +61,18 @@ $ rewasm loop.wasm
 
 Output:
 ```rust
-fn func_0(i32 arg_0, i32 arg_1) -> i32 {
-    i32 var_2;
-    i32 var_3;
-    i32 var_4;
+fn func_0(arg_0: i32, arg_1: i32) -> i32 {
+    let var_2: i32;
+    let var_3: i32;
 
     var_2 = 0;
-    while var_4 >s 0 {
+    while arg_0 >s 0 {
         var_3 = arg_1;
         while var_3 >s 0 {
             var_2 += 1;
             var_3 += -1;
         }
-        var_4 = arg_0 + -1;
+        arg_0 += -1;
     }
     return var_2;
 }
