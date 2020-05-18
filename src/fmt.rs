@@ -126,7 +126,7 @@ impl CodeWriter {
             .params()
             .iter()
             .enumerate()
-            .map(|(i, t)| format!("arg_{}: {}", i, t))
+            .map(|(i, t)| format!("{} arg_{}", t, i))
             .collect::<Vec<_>>()
             .join(", ");
         let func_header = if let Some(ret_type) = func.return_type() {
@@ -140,7 +140,7 @@ impl CodeWriter {
 
         for (var, var_type) in decls {
             self.newline();
-            write!(self, "let var_{}: {};", var, var_type);
+            write!(self, "{} var_{};", var_type, var);
         }
         if !decls.is_empty() {
             self.newline();
