@@ -8,6 +8,10 @@ use crate::fmt;
 
 use super::Expr;
 
+thread_local! {
+    static Z3_CTX: z3::Context = z3::Context::new(&z3::Config::new());
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum MappedExpr {
     Expr(Box<Expr>),
@@ -241,12 +245,11 @@ impl Cond {
     }
 
     pub fn simplify(&mut self) {
-        // TODO: make ctx lazy static
-        let config = z3::Config::new();
-        let ctx = z3::Context::new(&config);
-        if let Some(z3_expr) = self.to_z3_expr(&ctx) {
-            *self = simplify_z3_expr(z3_expr).into();
-        };
+        Z3_CTX.with(|ctx| {
+            if let Some(z3_expr) = self.to_z3_expr(ctx) {
+                *self = simplify_z3_expr(z3_expr).into();
+            };
+        });
     }
 
     /// TODO: Better name and return type
@@ -254,13 +257,12 @@ impl Cond {
     /// Some(false) => self == other
     /// None => self is not compareable to other
     pub fn is_opposite(&self, other: &Self) -> Option<bool> {
-        // TODO: make ctx lazy static
-        let config = z3::Config::new();
-        let ctx = z3::Context::new(&config);
-        let a = self.to_z3_expr(&ctx)?;
-        let b = other.to_z3_expr(&ctx)?;
-        let cond = simplify_z3_expr(a._eq(&b.not()));
-        cond.as_bool()
+        Z3_CTX.with(|ctx| {
+            let a = self.to_z3_expr(ctx)?;
+            let b = other.to_z3_expr(ctx)?;
+            let cond = simplify_z3_expr(a._eq(&b.not()));
+            cond.as_bool()
+        })
     }
 
     fn to_z3_expr<'ctx>(&self, ctx: &'ctx z3::Context) -> Option<z3::ast::Bool<'ctx>> {

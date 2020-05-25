@@ -100,7 +100,9 @@ pub fn propagate_expressions(cfg: &mut Cfg, DefUseMap(def_map, use_map): &mut De
                     }
 
                     if properties.contains_call && use_map[var].is_empty() {
-                        *cfg.stmt_mut(*def_pos) = Stmt::SetLocal(*var, Expr::True); // TODO: Replace with Expr::Unreachable
+                        // Call was propagated to it's single use.
+                        // Remove it at the definition so that the variable gets removed by DCE.
+                        *cfg.stmt_mut(*def_pos) = Stmt::SetLocal(*var, Expr::True);
                     }
                 }
                 Stmt::Phi(..) => (),
