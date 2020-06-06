@@ -86,6 +86,7 @@ impl<'a> Structurer<'a> {
 
             let code = self.cfg.nodes.remove(n).code;
             // TODO: change this when conds can have sidefx
+            //       In that case the condition needs to run, even if the code is empty
             if !code.is_empty() {
                 if cond.is_const_true() {
                     self.cfg.nodes[head].code.extend(code);

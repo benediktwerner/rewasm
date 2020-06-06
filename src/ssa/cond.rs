@@ -252,10 +252,9 @@ impl Cond {
         });
     }
 
-    /// TODO: Better name and return type
-    /// Some(true) => self == !other
-    /// Some(false) => self == other
-    /// None => self is not compareable to other
+    /// - Some(true) => self == !other
+    /// - Some(false) => self == other
+    /// - None => self is not compareable to other
     pub fn is_opposite(&self, other: &Self) -> Option<bool> {
         Z3_CTX.with(|ctx| {
             let a = self.to_z3_expr(ctx)?;
