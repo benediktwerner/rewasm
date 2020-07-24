@@ -98,7 +98,20 @@ fn write_assign_local(f: &mut fmt::CodeWriter, var: Var, expr: &Expr) {
         Expr::I32Add(v, b) | Expr::I64Add(v, b) | Expr::F32Add(v, b) | Expr::F64Add(v, b) => {
             if let Expr::GetLocal(v) = **v {
                 if v == var {
-                    write!(f, " += ");
+                    if let Expr::I32Const(val) = **b {
+                        if (val as i32) < 0 {
+                            f.write(" -= ");
+                            write!(f, "{}", -(val as i32));
+                            return;
+                        }
+                    } else if let Expr::I64Const(val) = **b {
+                        if (val as i64) < 0 {
+                            f.write(" -= ");
+                            write!(f, "{}", -(val as i64));
+                            return;
+                        }
+                    }
+                    f.write(" += ");
                     f.write(b);
                     return;
                 }

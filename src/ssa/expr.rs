@@ -790,7 +790,16 @@ impl fmt::CodeDisplay for Expr {
                 f.write("-");
                 write_paren(f, self, arg);
             }
-            Expr::I32Add(a, b) => write_binop(f, " + ", self, a, b),
+            Expr::I32Add(a, b) => {
+                if let Expr::I32Const(val) = **b {
+                    let signed_val = val as i32;
+                    if signed_val < 0 {
+                        write_binop(f, " - ", self, a, &Expr::I32Const((-signed_val) as u32));
+                        return;
+                    }
+                }
+                write_binop(f, " + ", self, a, b);
+            }
             Expr::I32Sub(a, b) => write_binop_low(f, " - ", self, a, b),
             Expr::I32Mul(a, b) => write_binop(f, " * ", self, a, b),
             Expr::I32DivS(a, b) => write_binop_low(f, " /s ", self, a, b),
@@ -813,7 +822,16 @@ impl fmt::CodeDisplay for Expr {
                 f.write("-");
                 write_paren(f, self, arg);
             }
-            Expr::I64Add(a, b) => write_binop(f, " + ", self, a, b),
+            Expr::I64Add(a, b) => {
+                if let Expr::I64Const(val) = **b {
+                    let signed_val = val as i64;
+                    if signed_val < 0 {
+                        write_binop(f, " - ", self, a, &Expr::I64Const((-signed_val) as u64));
+                        return;
+                    }
+                }
+                write_binop(f, " + ", self, a, b);
+            }
             Expr::I64Sub(a, b) => write_binop_low(f, " - ", self, a, b),
             Expr::I64Mul(a, b) => write_binop(f, " * ", self, a, b),
             Expr::I64DivS(a, b) => write_binop_low(f, " /s ", self, a, b),
