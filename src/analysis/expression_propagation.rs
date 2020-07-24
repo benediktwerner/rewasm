@@ -131,7 +131,8 @@ fn can_propagate(
         _ => (),
     }
     if properties.contains_call && count_var_occ(use_stmt, var) > 1
-        || properties.complexity > 2 || properties.complexity + use_stmt.complexity() > 4
+        || properties.complexity > 3
+        || properties.complexity > 1 && properties.complexity + use_stmt.complexity() > 7
         || !properties.can_propagate_over_stmt(use_stmt)
     {
         return false;

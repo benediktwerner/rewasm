@@ -73,7 +73,7 @@ impl Stmt {
             | I64Store8(location, value)
             | I64Store16(location, value)
             | I64Store32(location, value) => 1 + location.complexity() + value.complexity(),
-            Unreachable => 10,
+            Unreachable => 1,
             While(..) => unreachable!(),
             Break => unreachable!(),
             If(..) => unreachable!(),

@@ -181,12 +181,12 @@ impl Expr {
     pub fn complexity(&self) -> u32 {
         use Expr::*;
         match self {
-            True => 4,
+            True => 1,
             Select(cond, true_expr, false_expr) => {
                 1 + cond.complexity() + true_expr.complexity() + false_expr.complexity()
             }
 
-            Call(_, args) => args.iter().map(|arg| arg.complexity()).sum::<u32>() + args.len() as u32,
+            Call(_, args) => args.iter().map(|arg| arg.complexity()).sum::<u32>() + 1,
             CallIndirect(..) => 100,
 
             MemorySize => 1,
@@ -195,9 +195,9 @@ impl Expr {
             | I32Load16S(expr) | I32Load16U(expr) | I64Load8S(expr) | I64Load8U(expr) | I64Load16S(expr)
             | I64Load16U(expr) | I64Load32S(expr) | I64Load32U(expr) => 1 + expr.complexity(),
 
-            GetLocal(_) | GetGlobal(_) => 0,
+            GetLocal(_) | GetGlobal(_) => 1,
 
-            I32Const(_) | I64Const(_) | F32Const(_) | F64Const(_) => 0,
+            I32Const(_) | I64Const(_) | F32Const(_) | F64Const(_) => 1,
 
             I32Eqz(expr) | I64Eqz(expr) | I32Clz(expr) | I32Ctz(expr) | I32Popcnt(expr) | I64Clz(expr)
             | I64Ctz(expr) | I64Popcnt(expr) | F32Abs(expr) | F32Neg(expr) | F32Ceil(expr) | F32Floor(expr)
