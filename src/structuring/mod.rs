@@ -239,18 +239,17 @@ impl<'a> Structurer<'a> {
 
             if !break_conds.is_empty() {
                 for (idx, cond) in break_conds {
-                    let break_stmt = vec![
+                    let break_stmts = vec![
                         Stmt::SetLocal(Var::no_sub(1338_0000), Expr::I32Const(*idx)),
                         Stmt::Break,
                     ];
                     let mut cond: Cond = cond.into();
                     cond.simplify();
-                    let break_stmt = if cond.is_const_true() {
-                        Stmt::Seq(break_stmt)
+                    if cond.is_const_true() {
+                        self.cfg.nodes[n].code.extend(break_stmts);
                     } else {
-                        Stmt::If(cond, break_stmt)
+                        self.cfg.nodes[n].code.push(Stmt::If(cond, break_stmts));
                     };
-                    self.cfg.nodes[n].code.push(break_stmt);
                 }
             }
         }
@@ -353,9 +352,11 @@ pub fn structure(mut cfg: Cfg) -> (Vec<(Var, ValueType)>, Vec<Stmt>) {
     }
     .structure();
 
-    loop_refinement::apply(&mut code);
     sidefx_remover::apply(&mut code, &mut expr_map);
     insert_cond_exprs(&mut code, &expr_map);
+    flatten_seq(&mut code);
+
+    loop_refinement::apply(&mut code);
 
     let decls = rename_vars::apply(&mut code, wasm.module(), func_index);
     (decls, code)
@@ -398,6 +399,38 @@ fn insert_cond_exprs(code: &mut Vec<Stmt>, expr_map: &HashMap<u32, Expr>) {
                 insert_cond_exprs(body, expr_map);
             }
             _ => (),
+        }
+    }
+}
+
+fn flatten_seq(code: &mut Vec<Stmt>) {
+    let mut has_seq = false;
+
+    for stmt in code.iter_mut() {
+        match stmt {
+            Stmt::While(_, body, _) | Stmt::If(_, body) => flatten_seq(body),
+            Stmt::IfElse(_, true_body, false_body) => {
+                flatten_seq(true_body);
+                flatten_seq(false_body);
+            }
+            Stmt::Seq(body) => {
+                flatten_seq(body);
+                has_seq = true
+            }
+            _ => (),
+        }
+    }
+
+    if has_seq {
+        let old = std::mem::take(code);
+        for stmt in old {
+            if let Stmt::Seq(body) = stmt {
+                for seq_stmt in body {
+                    code.push(seq_stmt);
+                }
+            } else {
+                code.push(stmt)
+            }
         }
     }
 }

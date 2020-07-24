@@ -77,6 +77,16 @@ impl<'a> Renamer<'a> {
                     self.rename(body);
                     self.rename_cond(cond);
                 }
+                ForLoop(var, init, cond, post, body) => {
+                    if let Some(init) = init {
+                        self.rename_expr(init);
+                        let var_type = init.result_type(self.module, &self.var_types);
+                        self.rename_var(var, var_type);
+                    }
+                    self.rename_expr(post);
+                    self.rename(body);
+                    self.rename_cond(cond);
+                }
                 IfElse(cond, if_body, else_body) => {
                     self.rename_cond(cond);
                     self.rename(if_body);

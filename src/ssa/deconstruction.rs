@@ -42,6 +42,7 @@ fn remove_subscripts_in_stmt(stmt: &mut Stmt) {
         Nop => (),
         Phi(..) => unreachable!(),
         While(..) => unreachable!(),
+        ForLoop(..) => unreachable!(),
         Break => unreachable!(),
         If(..) => unreachable!(),
         IfElse(..) => unreachable!(),

@@ -2,7 +2,7 @@ use crate::fmt;
 
 use super::{Cond, Expr, Var};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LoopKind {
     While,
     DoWhile,
@@ -15,6 +15,7 @@ pub enum Stmt {
     Return(Expr),
     ReturnVoid,
     While(Cond, Vec<Stmt>, LoopKind),
+    ForLoop(Var, Option<Expr>, Cond, Expr, Vec<Stmt>),
     Break,
     Seq(Vec<Stmt>),
     Nop,
@@ -75,6 +76,7 @@ impl Stmt {
             | I64Store32(location, value) => 1 + location.complexity() + value.complexity(),
             Unreachable => 1,
             While(..) => unreachable!(),
+            ForLoop(..) => unreachable!(),
             Break => unreachable!(),
             If(..) => unreachable!(),
             IfElse(..) => unreachable!(),
@@ -94,6 +96,12 @@ fn write_store(f: &mut fmt::CodeWriter, fn_name: &'static str, target: &Expr, ex
 }
 
 fn write_assign_local(f: &mut fmt::CodeWriter, var: Var, expr: &Expr) {
+    if var.index < f.func().param_count() {
+        write!(f, "arg_{}", var);
+    } else {
+        write!(f, "var_{}", var);
+    }
+
     match expr {
         Expr::I32Add(v, b) | Expr::I64Add(v, b) | Expr::F32Add(v, b) | Expr::F64Add(v, b) => {
             if let Expr::GetLocal(v) = **v {
@@ -222,6 +230,22 @@ impl fmt::CodeDisplay for Stmt {
                     f.write(";");
                 }
             }
+            Stmt::ForLoop(var, init, cond, post, body) => {
+                f.write("for ");
+                if let Some(init) = init {
+                    write_assign_local(f, *var, init);
+                }
+                f.write("; ");
+                f.write(cond);
+                f.write("; ");
+                write_assign_local(f, *var, post);
+                f.write(" {");
+                f.indent();
+                f.write(&body[..]);
+                f.dedent();
+                f.newline();
+                f.write("}");
+            }
             Stmt::Break => {
                 f.write("break;");
             }
@@ -283,11 +307,6 @@ impl fmt::CodeDisplay for Stmt {
                 f.write("}");
             }
             Stmt::SetLocal(var, expr) => {
-                if var.index < f.func().param_count() {
-                    write!(f, "arg_{}", var);
-                } else {
-                    write!(f, "var_{}", var);
-                }
                 write_assign_local(f, *var, expr);
                 f.write(";");
             }

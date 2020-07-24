@@ -1,12 +1,13 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ops::Not;
 
 use z3::ast::Ast;
 
+use crate::analysis::used_vars;
 use crate::cfg::{EdgeCond, EdgeType};
 use crate::fmt;
 
-use super::Expr;
+use super::{Expr, Var};
 
 thread_local! {
     static Z3_CTX: z3::Context = z3::Context::new(&z3::Config::new());
@@ -30,6 +31,13 @@ impl MappedExpr {
         match self {
             Self::Expr(expr) => expr.precedence(),
             Self::Mapped(_) | Self::Const(_) => 0,
+        }
+    }
+
+    fn find_vars_internal(&self, result: &mut HashSet<Var>) {
+        match self {
+            Self::Expr(expr) => used_vars::find_and_add(expr, result),
+            Self::Mapped(_) | Self::Const(_) => (),
         }
     }
 
@@ -241,6 +249,32 @@ impl Cond {
                 b.insert_exprs(expr_map);
             }
             Self::Expr(expr) => expr.insert_exprs(expr_map),
+        }
+    }
+
+    pub fn find_vars(&self) -> HashSet<Var> {
+        let mut result = HashSet::new();
+        self.find_vars_internal(&mut result);
+        result
+    }
+
+    fn find_vars_internal(&self, result: &mut HashSet<Var>) {
+        match self {
+            Self::True | Self::False => (),
+            Self::Not(cond) => cond.find_vars_internal(result),
+            Self::And(a, b) => {
+                a.find_vars_internal(result);
+                b.find_vars_internal(result);
+            }
+            Self::Or(a, b) => {
+                a.find_vars_internal(result);
+                b.find_vars_internal(result);
+            }
+            Self::Cmp(a, _, b) => {
+                a.find_vars_internal(result);
+                b.find_vars_internal(result);
+            }
+            Self::Expr(expr) => expr.find_vars_internal(result),
         }
     }
 

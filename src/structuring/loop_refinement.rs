@@ -1,7 +1,9 @@
 use crate::ssa::{LoopKind, Stmt};
 
 pub fn apply(code: &mut Vec<Stmt>) {
-    for stmt in code {
+    let mut for_loops = Vec::new();
+
+    for (i, stmt) in code.iter_mut().enumerate() {
         use Stmt::*;
         match stmt {
             While(cond, body, kind) => {
@@ -26,6 +28,18 @@ pub fn apply(code: &mut Vec<Stmt>) {
                         }
                     }
                 }
+
+                if *kind == LoopKind::While {
+                    let vars = cond.find_vars();
+                    if let Some(Stmt::SetLocal(var, _)) = body.last() {
+                        if vars.contains(var) {
+                            if let Some(Stmt::SetLocal(var, post)) = body.pop() {
+                                for_loops.push((i, var, post));
+                            }
+                        }
+                    }
+                }
+
                 apply(body);
             }
             If(_, body) => {
@@ -40,5 +54,30 @@ pub fn apply(code: &mut Vec<Stmt>) {
             }
             _ => (),
         }
+    }
+
+    let mut shift = 0;
+
+    for (mut i, var, post) in for_loops {
+        i -= shift;
+        let mut init = None;
+        if i > 0 {
+            if let Some(Stmt::SetLocal(var2, _)) = code.get(i - 1) {
+                if *var2 == var {
+                    i -= 1;
+                    shift += 1;
+                    if let Stmt::SetLocal(_, init2) = code.remove(i) {
+                        init = Some(init2);
+                    }
+                }
+            }
+        }
+        replace_with::replace_with_or_abort(&mut code[i], |lop| {
+            if let Stmt::While(cond, body, _) = lop {
+                Stmt::ForLoop(var, init, cond, post, body)
+            } else {
+                unreachable!()
+            }
+        })
     }
 }

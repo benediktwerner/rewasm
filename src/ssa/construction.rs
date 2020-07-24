@@ -274,6 +274,7 @@ impl SSATransformer {
             ReturnVoid => (),
             Nop => (),
             While(..) => unreachable!(),
+            ForLoop(..) => unreachable!(),
             Break => unreachable!(),
             If(..) => unreachable!(),
             IfElse(..) => unreachable!(),

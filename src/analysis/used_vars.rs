@@ -1,40 +1,40 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, hash::BuildHasher};
 
 use crate::ssa::{Expr, Var};
 
 pub fn find(expr: &Expr) -> HashSet<Var> {
     let mut result = HashSet::new();
-    used_vars(expr, &mut result);
+    find_and_add(expr, &mut result);
     result
 }
 
-fn used_vars(expr: &Expr, result: &mut HashSet<Var>) {
+pub fn find_and_add<S: BuildHasher>(expr: &Expr, result: &mut HashSet<Var, S>) {
     use Expr::*;
     match expr {
         True => (),
         Select(cond, true_expr, false_expr) => {
-            used_vars(cond, result);
-            used_vars(true_expr, result);
-            used_vars(false_expr, result);
+            find_and_add(cond, result);
+            find_and_add(true_expr, result);
+            find_and_add(false_expr, result);
         }
 
         Call(_, args) => {
             for arg in args {
-                used_vars(arg, result);
+                find_and_add(arg, result);
             }
         }
         CallIndirect(index, args, _) => {
-            used_vars(index, result);
+            find_and_add(index, result);
             for arg in args {
-                used_vars(arg, result);
+                find_and_add(arg, result);
             }
         }
 
         MemorySize => (),
-        MemoryGrow(expr) => used_vars(expr, result),
+        MemoryGrow(expr) => find_and_add(expr, result),
         I32Load(expr) | I64Load(expr) | F32Load(expr) | F64Load(expr) | I32Load8S(expr) | I32Load8U(expr)
         | I32Load16S(expr) | I32Load16U(expr) | I64Load8S(expr) | I64Load8U(expr) | I64Load16S(expr)
-        | I64Load16U(expr) | I64Load32S(expr) | I64Load32U(expr) => used_vars(expr, result),
+        | I64Load16U(expr) | I64Load32S(expr) | I64Load32U(expr) => find_and_add(expr, result),
 
         GetLocal(var) => {
             result.insert(*var);
@@ -91,7 +91,7 @@ fn used_vars(expr: &Expr, result: &mut HashSet<Var>) {
         | I32ReinterpretF32(expr)
         | I64ReinterpretF64(expr)
         | F32ReinterpretI32(expr)
-        | F64ReinterpretI64(expr) => used_vars(expr, result),
+        | F64ReinterpretI64(expr) => find_and_add(expr, result),
 
         I32Eq(left, right)
         | I32Ne(left, right)
@@ -169,8 +169,8 @@ fn used_vars(expr: &Expr, result: &mut HashSet<Var>) {
         | F64Min(left, right)
         | F64Max(left, right)
         | F64Copysign(left, right) => {
-            used_vars(left, result);
-            used_vars(right, result);
+            find_and_add(left, result);
+            find_and_add(right, result);
         }
     }
 }
