@@ -107,20 +107,35 @@ fn write_assign_local(f: &mut fmt::CodeWriter, var: Var, expr: &Expr) {
             if let Expr::GetLocal(v) = **v {
                 if v == var {
                     if let Expr::I32Const(val) = **b {
-                        if (val as i32) < 0 {
+                        let val = val as i32;
+                        if val == 1 {
+                            f.write("++");
+                        } else if val == -1 {
+                            f.write("--");
+                        } else if val < 0 {
                             f.write(" -= ");
-                            write!(f, "{}", -(val as i32));
-                            return;
+                            write!(f, "{}", -val);
+                        } else {
+                            f.write(" += ");
+                            write!(f, "{}", val);
                         }
                     } else if let Expr::I64Const(val) = **b {
-                        if (val as i64) < 0 {
+                        let val = val as i64;
+                        if val == 1 {
+                            f.write("++");
+                        } else if val == -1 {
+                            f.write("--");
+                        } else if val < 0 {
                             f.write(" -= ");
-                            write!(f, "{}", -(val as i64));
-                            return;
+                            write!(f, "{}", -val);
+                        } else {
+                            f.write(" += ");
+                            write!(f, "{}", val);
                         }
+                    } else {
+                        f.write(" += ");
+                        f.write(b);
                     }
-                    f.write(" += ");
-                    f.write(b);
                     return;
                 }
             }
@@ -154,7 +169,20 @@ fn write_assign_global(f: &mut fmt::CodeWriter, var: u32, expr: &Expr) {
         Expr::I32Add(v, b) | Expr::I64Add(v, b) | Expr::F32Add(v, b) | Expr::F64Add(v, b) => {
             if let Expr::GetGlobal(v) = **v {
                 if v == var {
-                    write!(f, " += ");
+                    if let Expr::I32Const(val) = **b {
+                        if (val as i32) < 0 {
+                            f.write(" -= ");
+                            write!(f, "{}", -(val as i32));
+                            return;
+                        }
+                    } else if let Expr::I64Const(val) = **b {
+                        if (val as i64) < 0 {
+                            f.write(" -= ");
+                            write!(f, "{}", -(val as i64));
+                            return;
+                        }
+                    }
+                    f.write(" += ");
                     f.write(b);
                     return;
                 }
