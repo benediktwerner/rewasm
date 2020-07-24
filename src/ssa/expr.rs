@@ -84,6 +84,7 @@ pub enum Expr {
     I32Clz(Box<Expr>),
     I32Ctz(Box<Expr>),
     I32Popcnt(Box<Expr>),
+    I32Neg(Box<Expr>),
     I32Add(Box<Expr>, Box<Expr>),
     I32Sub(Box<Expr>, Box<Expr>),
     I32Mul(Box<Expr>, Box<Expr>),
@@ -103,6 +104,7 @@ pub enum Expr {
     I64Clz(Box<Expr>),
     I64Ctz(Box<Expr>),
     I64Popcnt(Box<Expr>),
+    I64Neg(Box<Expr>),
     I64Add(Box<Expr>, Box<Expr>),
     I64Sub(Box<Expr>, Box<Expr>),
     I64Mul(Box<Expr>, Box<Expr>),
@@ -199,12 +201,11 @@ impl Expr {
 
             I32Const(_) | I64Const(_) | F32Const(_) | F64Const(_) => 1,
 
-            I32Eqz(expr) | I64Eqz(expr) | I32Clz(expr) | I32Ctz(expr) | I32Popcnt(expr) | I64Clz(expr)
-            | I64Ctz(expr) | I64Popcnt(expr) | F32Abs(expr) | F32Neg(expr) | F32Ceil(expr) | F32Floor(expr)
-            | F32Trunc(expr) | F32Nearest(expr) | F32Sqrt(expr) | F64Abs(expr) | F64Neg(expr) | F64Ceil(expr)
-            | F64Floor(expr) | F64Trunc(expr) | F64Nearest(expr) | F64Sqrt(expr) | I32WrapI64(expr) => {
-                1 + expr.complexity()
-            }
+            I32Eqz(expr) | I64Eqz(expr) | I32Clz(expr) | I32Ctz(expr) | I32Popcnt(expr) | I32Neg(expr)
+            | I64Clz(expr) | I64Ctz(expr) | I64Popcnt(expr) | I64Neg(expr) | F32Abs(expr) | F32Neg(expr)
+            | F32Ceil(expr) | F32Floor(expr) | F32Trunc(expr) | F32Nearest(expr) | F32Sqrt(expr) | F64Abs(expr)
+            | F64Neg(expr) | F64Ceil(expr) | F64Floor(expr) | F64Trunc(expr) | F64Nearest(expr) | F64Sqrt(expr)
+            | I32WrapI64(expr) => 1 + expr.complexity(),
 
             I32TruncSF32(expr)
             | I32TruncUF32(expr)
@@ -384,6 +385,7 @@ impl Expr {
             Expr::I32Clz(..) => 0,
             Expr::I32Ctz(..) => 0,
             Expr::I32Popcnt(..) => 0,
+            Expr::I32Neg(..) => 1,
             Expr::I32Add(..) => 4,
             Expr::I32Sub(..) => 4,
             Expr::I32Mul(..) => 3,
@@ -403,6 +405,7 @@ impl Expr {
             Expr::I64Clz(..) => 0,
             Expr::I64Ctz(..) => 0,
             Expr::I64Popcnt(..) => 0,
+            Expr::I64Neg(..) => 1,
             Expr::I64Add(..) => 4,
             Expr::I64Sub(..) => 4,
             Expr::I64Mul(..) => 3,
@@ -491,14 +494,15 @@ impl Expr {
             MemoryGrow(..) => I32,
 
             I32Load(..) | F32Load(..) | I32Load8S(..) | I32Load8U(..) | I32Load16S(..) | I32Load16U(..)
-            | I32Clz(..) | I32Ctz(..) | I32Popcnt(..) | I32Add(..) | I32Sub(..) | I32Mul(..) | I32DivS(..)
-            | I32DivU(..) | I32RemS(..) | I32RemU(..) | I32And(..) | I32Or(..) | I32Xor(..) | I32Shl(..)
-            | I32ShrS(..) | I32ShrU(..) | I32Rotl(..) | I32Rotr(..) | I32Const(..) => I32,
+            | I32Clz(..) | I32Ctz(..) | I32Popcnt(..) | I32Neg(..) | I32Add(..) | I32Sub(..) | I32Mul(..)
+            | I32DivS(..) | I32DivU(..) | I32RemS(..) | I32RemU(..) | I32And(..) | I32Or(..) | I32Xor(..)
+            | I32Shl(..) | I32ShrS(..) | I32ShrU(..) | I32Rotl(..) | I32Rotr(..) | I32Const(..) => I32,
 
             I64Load(..) | F64Load(..) | I64Load8S(..) | I64Load8U(..) | I64Load16S(..) | I64Load16U(..)
-            | I64Load32S(..) | I64Load32U(..) | I64Clz(..) | I64Ctz(..) | I64Popcnt(..) | I64Add(..) | I64Sub(..)
-            | I64Mul(..) | I64DivS(..) | I64DivU(..) | I64RemS(..) | I64RemU(..) | I64And(..) | I64Or(..)
-            | I64Xor(..) | I64Shl(..) | I64ShrS(..) | I64ShrU(..) | I64Rotl(..) | I64Rotr(..) | I64Const(..) => I64,
+            | I64Load32S(..) | I64Load32U(..) | I64Clz(..) | I64Ctz(..) | I64Popcnt(..) | I64Neg(..) | I64Add(..)
+            | I64Sub(..) | I64Mul(..) | I64DivS(..) | I64DivU(..) | I64RemS(..) | I64RemU(..) | I64And(..)
+            | I64Or(..) | I64Xor(..) | I64Shl(..) | I64ShrS(..) | I64ShrU(..) | I64Rotl(..) | I64Rotr(..)
+            | I64Const(..) => I64,
 
             GetLocal(var) => var_types[var],
             GetGlobal(idx) => module.globals()[*idx as usize].value_type(),
@@ -782,6 +786,10 @@ impl fmt::CodeDisplay for Expr {
             Expr::I32Clz(arg) => write_unop_func(f, "clz", arg),
             Expr::I32Ctz(arg) => write_unop_func(f, "ctz", arg),
             Expr::I32Popcnt(arg) => write_unop_func(f, "popcnt", arg),
+            Expr::I32Neg(arg) => {
+                f.write("-");
+                write_paren(f, self, arg);
+            }
             Expr::I32Add(a, b) => write_binop(f, " + ", self, a, b),
             Expr::I32Sub(a, b) => write_binop_low(f, " - ", self, a, b),
             Expr::I32Mul(a, b) => write_binop(f, " * ", self, a, b),
@@ -801,6 +809,10 @@ impl fmt::CodeDisplay for Expr {
             Expr::I64Clz(arg) => write_unop_func(f, "clz", arg),
             Expr::I64Ctz(arg) => write_unop_func(f, "ctz", arg),
             Expr::I64Popcnt(arg) => write_unop_func(f, "popcnt", arg),
+            Expr::I64Neg(arg) => {
+                f.write("-");
+                write_paren(f, self, arg);
+            }
             Expr::I64Add(a, b) => write_binop(f, " + ", self, a, b),
             Expr::I64Sub(a, b) => write_binop_low(f, " - ", self, a, b),
             Expr::I64Mul(a, b) => write_binop(f, " * ", self, a, b),

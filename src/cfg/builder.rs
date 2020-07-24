@@ -576,7 +576,15 @@ impl CfgBuilder {
                 I32Ctz => self.unop(Expr::I32Ctz),
                 I32Popcnt => self.unop(Expr::I32Popcnt),
                 I32Add => self.binop(Expr::I32Add),
-                I32Sub => self.binop(Expr::I32Sub),
+                I32Sub => {
+                    let b = Box::new(self.pop());
+                    let a = self.pop();
+                    if let Expr::I32Const(0) = a {
+                        self.push(Expr::I32Neg(b));
+                    } else {
+                        self.push(Expr::I32Sub(Box::new(a), b));
+                    }
+                }
                 I32Mul => self.binop(Expr::I32Mul),
                 I32DivS => self.binop(Expr::I32DivS),
                 I32DivU => self.binop(Expr::I32DivU),
@@ -595,7 +603,15 @@ impl CfgBuilder {
                 I64Ctz => self.unop(Expr::I64Ctz),
                 I64Popcnt => self.unop(Expr::I64Popcnt),
                 I64Add => self.binop(Expr::I64Add),
-                I64Sub => self.binop(Expr::I64Sub),
+                I64Sub => {
+                    let b = Box::new(self.pop());
+                    let a = self.pop();
+                    if let Expr::I64Const(0) = a {
+                        self.push(Expr::I64Neg(b));
+                    } else {
+                        self.push(Expr::I64Sub(Box::new(a), b));
+                    }
+                }
                 I64Mul => self.binop(Expr::I64Mul),
                 I64DivS => self.binop(Expr::I64DivS),
                 I64DivU => self.binop(Expr::I64DivU),
