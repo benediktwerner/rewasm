@@ -119,10 +119,10 @@ impl std::fmt::Display for CmpOp {
         match self {
             Self::Eq => write!(f, "=="),
             Self::Neq => write!(f, "!="),
-            Self::Geq => write!(f, ">="),
-            Self::Gt => write!(f, ">"),
-            Self::Leq => write!(f, "<="),
-            Self::Lt => write!(f, "<"),
+            Self::Geq => write!(f, ">=u"),
+            Self::Gt => write!(f, ">u"),
+            Self::Leq => write!(f, "<=u"),
+            Self::Lt => write!(f, "<u"),
         }
     }
 }
