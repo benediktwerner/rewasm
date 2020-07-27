@@ -292,6 +292,40 @@ impl Cond {
         }
     }
 
+    pub fn get_mapped_vars(&self) -> HashSet<u32> {
+        let mut result = HashSet::new();
+        self.get_mapped_vars_internal(&mut result);
+        result
+    }
+
+    fn get_mapped_vars_internal(&self, result: &mut HashSet<u32>) {
+        match self {
+            Self::True | Self::False => (),
+            Self::Not(cond) => cond.get_mapped_vars_internal(result),
+            Self::And(a, b) => {
+                a.get_mapped_vars_internal(result);
+                b.get_mapped_vars_internal(result);
+            }
+            Self::Or(a, b) => {
+                a.get_mapped_vars_internal(result);
+                b.get_mapped_vars_internal(result);
+            }
+            Self::Cmp(a, _, b) => {
+                if let MappedExpr::Mapped(a) = a {
+                    result.insert(*a);
+                }
+                if let MappedExpr::Mapped(b) = b {
+                    result.insert(*b);
+                }
+            }
+            Self::Expr(expr) => {
+                if let MappedExpr::Mapped(expr) = expr {
+                    result.insert(*expr);
+                }
+            }
+        }
+    }
+
     pub fn get_subexprs(&self) -> Vec<&Cond> {
         let mut result = Vec::new();
         self.get_subexprs_internal(&mut result);

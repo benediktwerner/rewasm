@@ -59,28 +59,7 @@ fn for_each_mapped_expr_stmt(stmt: &Stmt, f: &mut impl FnMut(u32)) {
 }
 
 fn for_each_mapped_expr_cond(cond: &Cond, f: &mut impl FnMut(u32)) {
-    use Cond::*;
-    match cond {
-        True | False => (),
-        Not(cond) => for_each_mapped_expr_cond(cond, f),
-        And(a, b) | Or(a, b) => {
-            for_each_mapped_expr_cond(a, f);
-            for_each_mapped_expr_cond(b, f);
-        }
-        Cmp(a, _, b) => {
-            if let MappedExpr::Mapped(index) = a {
-                f(*index);
-            }
-            if let MappedExpr::Mapped(index) = b {
-                f(*index);
-            }
-        }
-        Expr(expr) => {
-            if let MappedExpr::Mapped(index) = expr {
-                f(*index);
-            }
-        }
-    }
+    cond.get_mapped_vars().into_iter().for_each(f);
 }
 
 fn hoist_conds(code: &mut Vec<Stmt>, todo: &mut HashSet<u32>, expr_map: &mut HashMap<u32, Expr>) {
