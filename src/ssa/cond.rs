@@ -13,7 +13,7 @@ thread_local! {
     static Z3_CTX: z3::Context = z3::Context::new(&z3::Config::new());
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum MappedExpr {
     Expr(Box<Expr>),
     Const(u32),
@@ -138,7 +138,7 @@ impl std::fmt::Display for CmpOp {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Cond {
     True,
     False,
@@ -289,6 +289,29 @@ impl Cond {
                 b.find_vars_internal(result);
             }
             Self::Expr(expr) => expr.find_vars_internal(result),
+        }
+    }
+
+    pub fn get_subexprs(&self) -> Vec<&Cond> {
+        let mut result = Vec::new();
+        self.get_subexprs_internal(&mut result);
+        result
+    }
+
+    fn get_subexprs_internal<'a>(&'a self, result: &mut Vec<&'a Cond>) {
+        match self {
+            Cond::True | Cond::False | Cond::Not(_) | Cond::Cmp(_, _, _) | Cond::Expr(_) => result.push(self),
+            Cond::And(left, right) => {
+                left.get_subexprs_internal(result);
+                right.get_subexprs_internal(result);
+            }
+            Cond::Or(left, right) => {
+                let left = left.get_subexprs().into_iter().collect::<HashSet<_>>();
+                let right = right.get_subexprs().into_iter().collect::<HashSet<_>>();
+                for expr in left.intersection(&right) {
+                    result.push(expr);
+                }
+            }
         }
     }
 

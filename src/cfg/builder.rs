@@ -205,8 +205,8 @@ impl CfgBuilder {
             let val = match local {
                 ValueType::I32 => Expr::I32Const(0),
                 ValueType::I64 => Expr::I64Const(0),
-                ValueType::F32 => Expr::F32Const(0.0),
-                ValueType::F64 => Expr::F64Const(0.0),
+                ValueType::F32 => Expr::F32Const(0.0_f32.to_bits()),
+                ValueType::F64 => Expr::F64Const(0.0_f64.to_bits()),
             };
             self.push_code(Stmt::SetLocal(Var::no_sub(i as u32), val));
         }
@@ -565,8 +565,8 @@ impl CfgBuilder {
 
                 I32Const(val) => self.push(Expr::I32Const(*val as u32)),
                 I64Const(val) => self.push(Expr::I64Const(*val as u64)),
-                F32Const(val) => self.push(Expr::F32Const(f32::from_bits(*val))),
-                F64Const(val) => self.push(Expr::F64Const(f64::from_bits(*val))),
+                F32Const(val) => self.push(Expr::F32Const(*val as u32)),
+                F64Const(val) => self.push(Expr::F64Const(*val as u64)),
 
                 I32Eqz => self.unop(Expr::I32Eqz),
                 I32Eq => self.binop(Expr::I32Eq),

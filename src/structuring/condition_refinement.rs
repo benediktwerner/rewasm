@@ -10,6 +10,22 @@ pub fn apply(code: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < code.len() - 1 {
         if let Stmt::If(cond, _) = &code[i] {
+            for expr in cond.get_subexprs() {
+                let end = find_nodes_with_common_subexpr(code, i, expr);
+                if end > i + 1 {
+                    let expr = expr.clone();
+                    combine_nodes_with_common_subexpr(code, expr, i, end);
+                    break;
+                }
+            }
+        }
+
+        i += 1;
+    }
+
+    let mut i = 0;
+    while i < code.len() - 1 {
+        if let Stmt::If(cond, _) = &code[i] {
             match &code[i + 1] {
                 Stmt::If(other, _) | Stmt::IfElse(other, ..) => {
                     if cond.is_opposite(other).is_some() {
@@ -36,6 +52,44 @@ pub fn apply(code: &mut Vec<Stmt>) {
         }
         i += 1;
     }
+}
+
+fn find_nodes_with_common_subexpr<'a>(code: &'a [Stmt], start: usize, expr: &Cond) -> usize {
+    for (i, stmt) in code[start + 1..].iter().enumerate() {
+        if let Stmt::If(cond, _) = stmt {
+            if cond.get_subexprs().iter().any(|e| *e == expr) {
+                continue;
+            }
+        }
+        return start + 1 + i;
+    }
+    code.len()
+}
+
+fn combine_nodes_with_common_subexpr(code: &mut Vec<Stmt>, expr: Cond, start: usize, end: usize) {
+    let mut new_code = Vec::new();
+
+    for stmt in code.drain(start..end) {
+        if let Stmt::If(cond, body) = stmt {
+            let cond = cond
+                .get_subexprs()
+                .into_iter()
+                .cloned()
+                .filter(|e| *e != expr)
+                .fold(Cond::True, |a, b| a.and(b));
+
+            if cond.is_const_true() {
+                new_code.push(Stmt::Seq(body));
+            } else {
+                new_code.push(Stmt::If(cond, body));
+            }
+        } else {
+            unreachable!();
+        }
+    }
+
+    apply(&mut new_code);
+    code.insert(start, Stmt::If(expr, new_code));
 }
 
 fn combine_conditions(code: &mut Vec<Stmt>, start: usize, cond: Cond) {

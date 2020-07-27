@@ -6,7 +6,7 @@ use bwasm::ValueType;
 
 use super::Var;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Expr {
     True,
 
@@ -40,8 +40,8 @@ pub enum Expr {
     GetGlobal(u32),
     I32Const(u32),
     I64Const(u64),
-    F32Const(f32),
-    F64Const(f64),
+    F32Const(u32),
+    F64Const(u64),
 
     I32Eqz(Box<Expr>),
     I32Eq(Box<Expr>, Box<Expr>),
@@ -736,8 +736,8 @@ impl fmt::CodeDisplay for Expr {
             Expr::GetGlobal(index) => write!(f, "global_{}", *index),
             Expr::I32Const(val) => write!(f, "{}", *val as i32),
             Expr::I64Const(val) => write!(f, "{}", *val as i64),
-            Expr::F32Const(val) => write!(f, "{}", val),
-            Expr::F64Const(val) => write!(f, "{}", val),
+            Expr::F32Const(val) => write!(f, "{}", f32::from_bits(*val)),
+            Expr::F64Const(val) => write!(f, "{}", f64::from_bits(*val)),
 
             Expr::I32Eqz(arg) => {
                 write_paren(f, self, arg);
