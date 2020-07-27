@@ -420,7 +420,7 @@ impl Not for Cond {
 
 fn simplify_z3_expr(expr: z3::ast::Bool) -> z3::ast::Bool {
     let ctx = expr.get_ctx();
-    let tactic_simplify = z3::Tactic::from_name(ctx, "ctx-solver-simplify").unwrap();
+    let tactic_simplify = z3::Tactic::from_name(ctx, "simplify").unwrap();
     let tactic_propagate_values = z3::Tactic::from_name(ctx, "propagate-values").unwrap();
     let tactic_ctx_solver_simplify = z3::Tactic::from_name(ctx, "ctx-solver-simplify").unwrap();
     let expr = tactic_simplify.apply(&(&expr).into()).as_expr();
