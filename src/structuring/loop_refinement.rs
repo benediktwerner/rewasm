@@ -16,6 +16,7 @@ pub fn apply(code: &mut Vec<Stmt>) {
                         break;
                     }
                 }
+
                 if cond.is_const_true() {
                     while let Some(If(_, if_body)) = body.last() {
                         if let Some(Break) = if_body.first() {
