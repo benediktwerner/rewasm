@@ -145,12 +145,15 @@ impl From<EdgeCond> for Cond {
             EdgeType::Unconditional => Self::True,
             EdgeType::Conditional(true) => Self::from_index(cond.expr_index),
             EdgeType::Conditional(false) => Self::from_index(cond.expr_index).not(),
-            EdgeType::Case(val) => Self::Cmp(MappedExpr::Mapped(cond.expr_index), CmpOp::Eq, MappedExpr::Const(val)),
             EdgeType::CaseRange(start, end) => {
                 let idx = MappedExpr::Mapped(cond.expr_index);
-                let start = MappedExpr::Const(start);
-                let end = MappedExpr::Const(end);
-                Self::Cmp(start, CmpOp::Leq, idx.clone()).and(Self::Cmp(idx, CmpOp::Lt, end))
+                if start + 1 == end {
+                    Self::Cmp(MappedExpr::Mapped(cond.expr_index), CmpOp::Eq, MappedExpr::Const(start))
+                } else {
+                    let start = MappedExpr::Const(start);
+                    let end = MappedExpr::Const(end);
+                    Self::Cmp(start, CmpOp::Leq, idx.clone()).and(Self::Cmp(idx, CmpOp::Lt, end))
+                }
             }
             EdgeType::Default(min_val) => Self::Cmp(
                 MappedExpr::Mapped(cond.expr_index),

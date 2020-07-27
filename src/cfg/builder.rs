@@ -219,6 +219,29 @@ impl CfgBuilder {
         self.push(Expr::GetLocal(result_var));
     }
 
+    fn add_br_table_edge(
+        &mut self,
+        label_stack: &mut Vec<Label>,
+        target: u32,
+        result_type: &mut BlockType,
+        range_start: usize,
+        range_end: usize,
+        edge_index: usize,
+    ) {
+        let index = label_stack.len() - target as usize - 1;
+        let edge_type = EdgeType::CaseRange(range_start as u32, range_end as u32);
+        match label_stack[index] {
+            Label::Bound(_, _, target) => self.push_succ(edge_type, target, true),
+            Label::Unbound(_, block_type, ref mut relocs) => {
+                if let BlockType::Value(_) = block_type {
+                    *result_type = block_type;
+                }
+                relocs.push(Reloc::new(self.curr_id, edge_index));
+                self.push_succ(edge_type, 0, false);
+            }
+        }
+    }
+
     /// Build the cfg for the function `func_index` in `module`
     #[allow(clippy::cognitive_complexity)]
     fn build(mut self, wasm: Rc<wasm::Instance>, func_index: u32) -> Result<Cfg, CfgBuildError> {
@@ -369,47 +392,57 @@ impl CfgBuilder {
                 }
                 BrTable(table_data) => {
                     let mut result_type = BlockType::NoResult;
-                    let mut last_target = std::u32::MAX;
+                    let mut last_target = table_data.table.get(0).copied().unwrap_or_default();
                     let mut curr_start = 0;
                     let mut curr_edge = 0;
+                    let mut default_lower_bound = table_data.table.len() as u32;
 
-                    for (i, target) in table_data.table.iter().enumerate() {
-                        if *target == last_target {
+                    for (i, &target) in table_data.table.iter().enumerate() {
+                        if target == last_target {
                             continue;
-                        } else if last_target != std::u32::MAX {
-                            let index = label_stack.len() - last_target as usize - 1;
-                            let edge_type = if curr_start == i - 1 {
-                                EdgeType::Case(curr_start as u32)
-                            } else {
-                                EdgeType::CaseRange(curr_start as u32, i as u32)
-                            };
-                            match label_stack[index] {
-                                Label::Bound(_, _, target) => self.push_succ(edge_type, target, true),
-                                Label::Unbound(_, block_type, ref mut relocs) => {
-                                    if let BlockType::Value(_) = block_type {
-                                        result_type = block_type;
-                                    }
-                                    relocs.push(Reloc::new(self.curr_id, curr_edge));
-                                    self.push_succ(edge_type, 0, false);
-                                }
-                            }
+                        } else {
+                            self.add_br_table_edge(
+                                &mut label_stack,
+                                last_target,
+                                &mut result_type,
+                                curr_start,
+                                i,
+                                curr_edge,
+                            );
                             curr_edge += 1;
                             curr_start = i;
                         }
-                        last_target = *target;
+
+                        last_target = target;
+                    }
+
+                    if let Some(&target) = table_data.table.last() {
+                        if target == table_data.default {
+                            default_lower_bound = curr_start as u32;
+                        } else {
+                            self.add_br_table_edge(
+                                &mut label_stack,
+                                target,
+                                &mut result_type,
+                                curr_start,
+                                table_data.table.len(),
+                                curr_edge,
+                            );
+                            curr_edge += 1;
+                        }
                     }
 
                     let index = label_stack.len() - table_data.default as usize - 1;
                     match label_stack[index] {
                         Label::Bound(_, _, target) => {
-                            self.push_succ(EdgeType::Default(table_data.table.len() as u32), target, true);
+                            self.push_succ(EdgeType::Default(default_lower_bound), target, true);
                         }
                         Label::Unbound(_, block_type, ref mut reloc) => {
                             if let BlockType::Value(_) = block_type {
                                 result_type = block_type;
                             }
                             reloc.push(Reloc::new(self.curr_id, curr_edge));
-                            self.push_succ(EdgeType::Default(table_data.table.len() as u32), 0, false);
+                            self.push_succ(EdgeType::Default(default_lower_bound), 0, false);
                         }
                     }
 

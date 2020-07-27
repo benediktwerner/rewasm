@@ -278,7 +278,7 @@ impl<'a> Structurer<'a> {
                 edge_type: if idx == succ_count - 1 {
                     EdgeType::Default(idx)
                 } else {
-                    EdgeType::Case(idx)
+                    EdgeType::CaseRange(idx, idx + 1)
                 },
                 expr_index: self.next_expr_index,
             };

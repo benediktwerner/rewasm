@@ -28,7 +28,6 @@ impl InstrPos {
 pub enum EdgeType {
     Unconditional,
     Conditional(bool),
-    Case(u32),
     CaseRange(u32, u32), // [start, end)
     Default(u32),
 }
@@ -120,7 +119,6 @@ impl Cfg {
                             EdgeType::Unconditional => "".to_string(),
                             EdgeType::Conditional(true) => "true".to_string(),
                             EdgeType::Conditional(false) => "false".to_string(),
-                            EdgeType::Case(val) => val.to_string(),
                             EdgeType::CaseRange(start, end) => format!("{}..{}", start, end),
                             EdgeType::Default(_) => "default".to_string(),
                         },
