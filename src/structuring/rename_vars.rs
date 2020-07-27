@@ -51,54 +51,71 @@ impl<'a> Renamer<'a> {
 
     pub fn rename(&mut self, code: &mut Vec<Stmt>) {
         for stmt in code {
-            use Stmt::*;
-            match stmt {
-                Expr(expr) | Return(expr) | Branch(expr) => self.rename_expr(expr),
-                SetLocal(ref mut var, expr) => {
-                    self.rename_expr(expr);
-                    let var_type = expr.result_type(self.module, &self.var_types);
+            self.rename_stmt(stmt);
+        }
+    }
+
+    pub fn rename_stmt(&mut self, stmt: &mut Stmt) {
+        use Stmt::*;
+        match stmt {
+            Expr(expr) | Return(expr) | Branch(expr) => self.rename_expr(expr),
+            SetLocal(ref mut var, expr) => {
+                self.rename_expr(expr);
+                let var_type = expr.result_type(self.module, &self.var_types);
+                self.rename_var(var, var_type);
+            }
+            SetGlobal(_, expr) => self.rename_expr(expr),
+            I32Store(location, value)
+            | I64Store(location, value)
+            | F32Store(location, value)
+            | F64Store(location, value)
+            | I32Store8(location, value)
+            | I32Store16(location, value)
+            | I64Store8(location, value)
+            | I64Store16(location, value)
+            | I64Store32(location, value) => {
+                self.rename_expr(location);
+                self.rename_expr(value);
+            }
+            While(cond, body, _) | If(cond, body) => {
+                // Rename body first in case of do-while
+                self.rename(body);
+                self.rename_cond(cond);
+            }
+            ForLoop(var, init, cond, post, body) => {
+                if let Some(init) = init {
+                    self.rename_expr(init);
+                    let var_type = init.result_type(self.module, &self.var_types);
                     self.rename_var(var, var_type);
                 }
-                SetGlobal(_, expr) => self.rename_expr(expr),
-                I32Store(location, value)
-                | I64Store(location, value)
-                | F32Store(location, value)
-                | F64Store(location, value)
-                | I32Store8(location, value)
-                | I32Store16(location, value)
-                | I64Store8(location, value)
-                | I64Store16(location, value)
-                | I64Store32(location, value) => {
-                    self.rename_expr(location);
-                    self.rename_expr(value);
-                }
-                While(cond, body, _) | If(cond, body) => {
-                    // Rename body first in case of do-while
-                    self.rename(body);
-                    self.rename_cond(cond);
-                }
-                ForLoop(var, init, cond, post, body) => {
-                    if let Some(init) = init {
-                        self.rename_expr(init);
-                        let var_type = init.result_type(self.module, &self.var_types);
-                        self.rename_var(var, var_type);
-                    }
-                    self.rename_expr(post);
-                    self.rename(body);
-                    self.rename_cond(cond);
-                }
-                IfElse(cond, if_body, else_body) => {
-                    self.rename_cond(cond);
-                    self.rename(if_body);
-                    self.rename(else_body);
-                }
-                Seq(body) => self.rename(body),
-                Nop => (),
-                Break => (),
-                ReturnVoid => (),
-                Unreachable => (),
-                Phi(..) => unreachable!(),
+                self.rename_expr(post);
+                self.rename(body);
+                self.rename_cond(cond);
             }
+            IfElse(cond, if_body, else_body) => {
+                self.rename_cond(cond);
+                self.rename(if_body);
+                self.rename(else_body);
+            }
+            SwitchCase(expr, cases, default) => {
+                match expr {
+                    MappedExpr::Expr(expr) => self.rename_expr(expr),
+                    MappedExpr::Const(_) => (),
+                    MappedExpr::Mapped(_) => unreachable!(),
+                }
+                for (_, stmt) in cases.iter_mut() {
+                    self.rename_stmt(stmt);
+                }
+                if let Some(default_stmt) = default {
+                    self.rename_stmt(default_stmt);
+                }
+            }
+            Seq(body) => self.rename(body),
+            Nop => (),
+            Break => (),
+            ReturnVoid => (),
+            Unreachable => (),
+            Phi(..) => unreachable!(),
         }
     }
 

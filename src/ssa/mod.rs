@@ -3,12 +3,14 @@ mod construction;
 mod deconstruction;
 pub mod expr;
 pub mod stmt;
+mod value_space;
 
 pub use cond::Cond;
 pub use construction::transform_to_ssa;
 pub use deconstruction::transform_out_of_ssa;
 pub use expr::Expr;
 pub use stmt::{LoopKind, Stmt};
+pub use value_space::ValueSpace;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Var {

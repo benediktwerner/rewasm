@@ -112,6 +112,17 @@ impl CmpOp {
             Self::Lt => Self::Geq,
         }
     }
+
+    pub fn mirror(self) -> Self {
+        match self {
+            Self::Eq => Self::Eq,
+            Self::Neq => Self::Neq,
+            Self::Geq => Self::Leq,
+            Self::Gt => Self::Lt,
+            Self::Leq => Self::Geq,
+            Self::Lt => Self::Gt,
+        }
+    }
 }
 
 impl std::fmt::Display for CmpOp {

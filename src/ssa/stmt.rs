@@ -1,6 +1,6 @@
 use crate::fmt;
 
-use super::{Cond, Expr, Var};
+use super::{Cond, Expr, Var, cond::MappedExpr, ValueSpace};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LoopKind {
@@ -25,6 +25,7 @@ pub enum Stmt {
 
     If(Cond, Vec<Stmt>),
     IfElse(Cond, Vec<Stmt>, Vec<Stmt>),
+    SwitchCase(MappedExpr, Vec<(ValueSpace, Stmt)>, Option<Box<Stmt>>),
 
     SetLocal(Var, Expr),
     SetGlobal(u32, Expr),
@@ -80,9 +81,16 @@ impl Stmt {
             Break => unreachable!(),
             If(..) => unreachable!(),
             IfElse(..) => unreachable!(),
+            SwitchCase(..) => unreachable!(),
             Seq(..) => unreachable!(),
             Nop => unreachable!(),
         }
+    }
+}
+
+impl Default for Stmt {
+    fn default() -> Self {
+        Stmt::Nop
     }
 }
 
@@ -330,6 +338,34 @@ impl fmt::CodeDisplay for Stmt {
                 f.write("else {");
                 f.indent();
                 f.write(&else_branch[..]);
+                f.dedent();
+                f.newline();
+                f.write("}");
+            }
+            Stmt::SwitchCase(expr, cases, default) => {
+                f.write("match ");
+                f.write(expr);
+                f.write(" {");
+                f.indent();
+                for (values, stmt) in cases {
+                    f.newline();
+                    f.write(values);
+                    f.write(" => {");
+                    f.indent();
+                    f.write(stmt);
+                    f.dedent();
+                    f.newline();
+                    f.write("}");
+                }
+                if let Some(default_stmt) = default {
+                    f.newline();
+                    f.write("default => {");
+                    f.indent();
+                    f.write(default_stmt);
+                    f.dedent();
+                    f.newline();
+                    f.write("}");
+                }
                 f.dedent();
                 f.newline();
                 f.write("}");

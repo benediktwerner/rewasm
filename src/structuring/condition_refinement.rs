@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::ssa::{Cond, Stmt};
+use crate::ssa::{cond::MappedExpr, Cond, Stmt, ValueSpace};
 
 pub fn apply(code: &mut Vec<Stmt>) {
     if code.is_empty() {
@@ -22,6 +22,16 @@ pub fn apply(code: &mut Vec<Stmt>) {
                     }
                 }
                 _ => (),
+            }
+        }
+        i += 1;
+    }
+
+    i = 0;
+    while i < code.len() - 1 {
+        if let Stmt::If(cond, _) = &code[i] {
+            if let Some(expr) = is_switch_case_cond(cond, None) {
+                create_switch_case(code, i, expr);
             }
         }
         i += 1;
@@ -85,5 +95,119 @@ fn combine_conditions(code: &mut Vec<Stmt>, start: usize, cond: Cond) {
         code.insert(start + 1, Stmt::Seq(true_code));
     } else {
         code.insert(start, Stmt::IfElse(cond, true_code, false_code));
+    }
+}
+
+fn create_switch_case(code: &mut Vec<Stmt>, start: usize, expr: u32) {
+    let mut cases = Vec::new();
+    let mut total_values = ValueSpace::empty();
+
+    for (i, stmt) in code.iter().enumerate().skip(start) {
+        match stmt {
+            Stmt::If(cond, _) => {
+                if let Some(values) = find_case_values(cond, expr) {
+                    if values.is_empty() || !total_values.intersect(&values).is_empty() {
+                        break;
+                    }
+                    total_values = total_values.union(&values);
+                    cases.push((values, i));
+                } else {
+                    break;
+                }
+            }
+            _ => break,
+        }
+    }
+
+    if cases.len() < 3 {
+        return;
+    }
+
+    let default_case = if total_values.is_full() {
+        let default_case_index = cases
+            .iter()
+            .enumerate()
+            .max_by_key(|(_, (range, _))| range.size())
+            .unwrap()
+            .0;
+        let default_case_index = cases.swap_remove(default_case_index).1;
+
+        if let Stmt::If(_, stmt) = std::mem::take(&mut code[default_case_index]) {
+            Some(Stmt::Seq(stmt))
+        } else {
+            unreachable!()
+        }
+    } else {
+        None
+    };
+
+    cases.sort_by_key(|(range, _)| range.start());
+
+    let mut cases_with_stmt = Vec::new();
+    for (range, i) in cases {
+        if let Stmt::If(_, stmt) = std::mem::take(&mut code[i]) {
+            cases_with_stmt.push((range, Stmt::Seq(stmt)));
+        } else {
+            unreachable!();
+        }
+    }
+
+    code.drain(start..(start + cases_with_stmt.len() + default_case.is_some() as usize));
+
+    code.insert(
+        start,
+        Stmt::SwitchCase(MappedExpr::Mapped(expr), cases_with_stmt, default_case.map(Box::new)),
+    );
+}
+
+fn is_switch_case_cond(cond: &Cond, switch_expr: Option<u32>) -> Option<u32> {
+    match cond {
+        Cond::True | Cond::False | Cond::Not(_) => None,
+        Cond::And(left, right) | Cond::Or(left, right) => {
+            let expr = is_switch_case_cond(left, switch_expr);
+            if expr.is_some() && is_switch_case_cond(right, expr).is_some() {
+                expr
+            } else {
+                None
+            }
+        }
+        Cond::Cmp(left, _, right) => {
+            if let Some(switch_expr) = switch_expr {
+                match (left, right) {
+                    (MappedExpr::Mapped(expr), MappedExpr::Const(_)) if *expr == switch_expr => Some(*expr),
+                    (MappedExpr::Const(_), MappedExpr::Mapped(expr)) if *expr == switch_expr => Some(*expr),
+                    _ => None,
+                }
+            } else {
+                match (left, right) {
+                    (MappedExpr::Mapped(expr), MappedExpr::Const(_)) => Some(*expr),
+                    (MappedExpr::Const(_), MappedExpr::Mapped(expr)) => Some(*expr),
+                    _ => None,
+                }
+            }
+        }
+        Cond::Expr(_) => None,
+    }
+}
+
+fn find_case_values(cond: &Cond, switch_expr: u32) -> Option<ValueSpace> {
+    match cond {
+        Cond::True | Cond::False | Cond::Not(_) => None,
+        Cond::And(left, right) => {
+            Some(find_case_values(left, switch_expr)?.intersect(&find_case_values(right, switch_expr)?))
+        }
+        Cond::Or(left, right) => {
+            Some(find_case_values(left, switch_expr)?.union(&find_case_values(right, switch_expr)?))
+        }
+        Cond::Cmp(left, op, right) => match (left, right) {
+            (MappedExpr::Mapped(expr), MappedExpr::Const(val)) if *expr == switch_expr => {
+                Some(ValueSpace::constrained_by(*op, *val))
+            }
+            (MappedExpr::Const(val), MappedExpr::Mapped(expr)) if *expr == switch_expr => {
+                Some(ValueSpace::constrained_by(op.mirror(), *val))
+            }
+            _ => None,
+        },
+        Cond::Expr(_) => None,
     }
 }

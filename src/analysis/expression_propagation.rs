@@ -56,7 +56,7 @@ impl ExprProperties {
                     && self.can_propagate_over_expr(location)
                     && self.can_propagate_over_expr(value)
             }
-            While(..) | ForLoop(..) | If(..) | IfElse(..) | Seq(..) => unreachable!(),
+            While(..) | ForLoop(..) | If(..) | IfElse(..) | SwitchCase(..) | Seq(..) => unreachable!(),
             Phi(..) | Nop | Break | ReturnVoid | Unreachable => true,
         }
     }
@@ -376,7 +376,7 @@ fn count_var_occ(stmt: &Stmt, var: Var) -> u32 {
         | I64Store8(location, value)
         | I64Store16(location, value)
         | I64Store32(location, value) => count_var_occ_expr(location, var) + count_var_occ_expr(value, var),
-        While(..) | ForLoop(..) | If(..) | IfElse(..) | Seq(..) => unreachable!(),
+        While(..) | ForLoop(..) | If(..) | IfElse(..) | SwitchCase(..) | Seq(..) => unreachable!(),
         Nop => 0,
         Break => 0,
         ReturnVoid => 0,
@@ -578,6 +578,7 @@ fn replace_all(use_stmt: &mut Stmt, var: Var, def_expr: &Expr) {
         Break => unreachable!(),
         If(..) => unreachable!(),
         IfElse(..) => unreachable!(),
+        SwitchCase(..) => unreachable!(),
         Seq(..) => unreachable!(),
     }
 }

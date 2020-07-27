@@ -380,26 +380,39 @@ fn build_expr_map(cfg: &mut Cfg) -> HashMap<u32, Expr> {
 
 fn insert_cond_exprs(code: &mut Vec<Stmt>, expr_map: &HashMap<u32, Expr>) {
     for stmt in code {
-        use Stmt::*;
-        match stmt {
-            While(cond, body, _) => {
-                cond.insert_exprs(expr_map);
-                insert_cond_exprs(body, expr_map);
-            }
-            If(cond, body) => {
-                cond.insert_exprs(expr_map);
-                insert_cond_exprs(body, expr_map);
-            }
-            IfElse(cond, true_body, false_body) => {
-                cond.insert_exprs(expr_map);
-                insert_cond_exprs(true_body, expr_map);
-                insert_cond_exprs(false_body, expr_map);
-            }
-            Seq(body) => {
-                insert_cond_exprs(body, expr_map);
-            }
-            _ => (),
+        insert_cond_exprs_stmt(stmt, expr_map);
+    }
+}
+
+fn insert_cond_exprs_stmt(stmt: &mut Stmt, expr_map: &HashMap<u32, Expr>) {
+    use Stmt::*;
+    match stmt {
+        While(cond, body, _) => {
+            cond.insert_exprs(expr_map);
+            insert_cond_exprs(body, expr_map);
         }
+        If(cond, body) => {
+            cond.insert_exprs(expr_map);
+            insert_cond_exprs(body, expr_map);
+        }
+        IfElse(cond, true_body, false_body) => {
+            cond.insert_exprs(expr_map);
+            insert_cond_exprs(true_body, expr_map);
+            insert_cond_exprs(false_body, expr_map);
+        }
+        SwitchCase(expr, cases, default) => {
+            expr.insert_exprs(expr_map);
+            for (_, stmt) in cases {
+                insert_cond_exprs_stmt(stmt, expr_map);
+            }
+            if let Some(default_stmt) = default {
+                insert_cond_exprs_stmt(default_stmt, expr_map);
+            }
+        }
+        Seq(body) => {
+            insert_cond_exprs(body, expr_map);
+        }
+        _ => (),
     }
 }
 

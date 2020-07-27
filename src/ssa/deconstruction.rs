@@ -46,6 +46,7 @@ fn remove_subscripts_in_stmt(stmt: &mut Stmt) {
         Break => unreachable!(),
         If(..) => unreachable!(),
         IfElse(..) => unreachable!(),
+        SwitchCase(..) => unreachable!(),
         Seq(..) => unreachable!(),
     }
 }

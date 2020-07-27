@@ -278,6 +278,7 @@ impl SSATransformer {
             Break => unreachable!(),
             If(..) => unreachable!(),
             IfElse(..) => unreachable!(),
+            SwitchCase(..) => unreachable!(),
             Seq(..) => unreachable!(),
         }
     }
