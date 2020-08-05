@@ -333,19 +333,20 @@ impl Cond {
     }
 
     fn get_subexprs_internal<'a>(&'a self, result: &mut Vec<&'a Cond>) {
+        // TODO: Fix this. Convert to KNF or otherwise properly compute common terms in Cond::Or
         match self {
-            Cond::True | Cond::False | Cond::Not(_) | Cond::Cmp(_, _, _) | Cond::Expr(_) => result.push(self),
+            Cond::True | Cond::False | Cond::Not(_) | Cond::Cmp(_, _, _) | Cond::Expr(_) | Cond::Or(..) => result.push(self),
             Cond::And(left, right) => {
                 left.get_subexprs_internal(result);
                 right.get_subexprs_internal(result);
             }
-            Cond::Or(left, right) => {
-                let left = left.get_subexprs().into_iter().collect::<HashSet<_>>();
-                let right = right.get_subexprs().into_iter().collect::<HashSet<_>>();
-                for expr in left.intersection(&right) {
-                    result.push(expr);
-                }
-            }
+            // Cond::Or(left, right) => {
+            //     let left = left.get_subexprs().into_iter().collect::<HashSet<_>>();
+            //     let right = right.get_subexprs().into_iter().collect::<HashSet<_>>();
+            //     for expr in left.intersection(&right) {
+            //         result.push(expr);
+            //     }
+            // }
         }
     }
 
