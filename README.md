@@ -60,7 +60,7 @@ $ rewasm loop.wasm
 ```
 
 Output:
-``rust
+```rust
 fn func_0(i32 arg_0, i32 arg_1) -> i32 {
     i32 var_2;
     i32 var_3;
